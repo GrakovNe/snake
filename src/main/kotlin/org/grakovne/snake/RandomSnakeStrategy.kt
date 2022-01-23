@@ -5,31 +5,6 @@ import kotlin.random.Random
 class RandomSnakeStrategy {
 
     fun getMove(snake: Snake, field: Field, food: Food): Direction {
-        val foodDirection = whereFood(snake, food)
-
-        val head = snake.head()
-
-        val nextField = when (foodDirection) {
-            Direction.UP -> field.getCellType(head.first, head.second - 1)
-            Direction.DOWN -> field.getCellType(head.first, head.second + 1)
-            Direction.LEFT -> field.getCellType(head.first - 1, head.second)
-            Direction.RIGHT -> field.getCellType(head.first + 1, head.second)
-        }
-
-        return foodDirection
-    }
-
-    private fun isDirectionSafe(nextField: ElementType): Boolean {
-        return when (nextField) {
-            ElementType.EMPTY -> true
-            ElementType.SNAKE_HEAD -> false
-            ElementType.SNAKE -> false
-            ElementType.BORDER -> false
-            ElementType.FOOD -> true
-        }
-    }
-
-    private fun whereFood(snake: Snake, food: Food): Direction {
         if (snake.head().first > food.x) {
             return Direction.UP
         }
@@ -47,6 +22,16 @@ class RandomSnakeStrategy {
         }
 
         return randomDirection(snake)
+    }
+
+    private fun isDirectionSafe(nextField: ElementType): Boolean {
+        return when (nextField) {
+            ElementType.EMPTY -> true
+            ElementType.SNAKE_HEAD -> false
+            ElementType.SNAKE -> false
+            ElementType.BORDER -> false
+            ElementType.FOOD -> true
+        }
     }
 
     private fun randomDirection(snake: Snake): Direction {

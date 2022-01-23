@@ -4,39 +4,44 @@ fun main(args: Array<String>) {
 
     val strategy = RandomSnakeStrategy()
 
-    var food = Food(48, 48)
-    val field = Field(48, 48)
-    val uiKit = UIKit(48, 48)
+    var food = Food(80, 80)
+    val field = Field(80, 80)
+    val uiKit = UIKit(80, 80)
 
-    val snake = Snake(field.getRandomFreeCell())
+    var snake = Snake(field.getRandomFreeCell())
     field.update(snake, food)
     uiKit.showField(field)
 
     while (true) {
-        val direction = strategy.getMove(snake, field, food)
+        food = Food(80, 80)
+        snake = Snake(field.getRandomFreeCell())
 
-        if (snake.willAteSelf(direction)) {
-            break
-        }
+        while (true) {
+            val direction = strategy.getMove(snake, field, food)
 
-        snake.move(direction)
+            if (snake.willAteSelf(direction)) {
+                break
+            }
 
-        if (food.x == snake.head().first && food.y == snake.head().second) {
-            snake.grow()
-            food = Food(48, 48)
-        }
+            snake.move(direction)
 
-        if (isBorderCell(snake.head(), field) || isBeyondCell(snake.head(), field)) {
+            if (food.x == snake.head().first && food.y == snake.head().second) {
+                snake.grow()
+                food = Food(80, 80)
+            }
+
+            if (isBorderCell(snake.head(), field) || isBeyondCell(snake.head(), field)) {
+                field.update(snake, food)
+                uiKit.showField(field)
+
+                break
+            }
+
             field.update(snake, food)
             uiKit.showField(field)
 
-            break
+            Thread.sleep(5)
         }
-
-        field.update(snake, food)
-        uiKit.showField(field)
-
-        Thread.sleep(10)
     }
 }
 
