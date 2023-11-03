@@ -7,6 +7,14 @@ class Field(private val xSize: Int, private val ySize: Int) {
         drawBorders()
     }
 
+    fun setCellType(x: Int, y: Int, elementType: ElementType) {
+        if (x in 0 until xSize && y in 0 until ySize) {
+            elements[x][y] = elementType
+        } else {
+            throw IllegalArgumentException("Coordinates ($x, $y) are out of bounds.")
+        }
+    }
+
     fun copy(): Field {
         val newField = Field(xSize, ySize)
 
