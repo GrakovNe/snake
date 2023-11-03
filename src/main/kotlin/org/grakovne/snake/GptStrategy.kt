@@ -133,7 +133,7 @@ class GptStrategy {
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             shortestPath.isEmpty() -> 0
-            else -> 1 - shortestPath.size + (0.2 * compactness).toInt()
+            else -> field.getWidth() * field.getHeight() - shortestPath.size + (0.5 * compactness).toInt()
         }
     }
 }
