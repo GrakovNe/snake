@@ -4,21 +4,62 @@ class GptStrategy {
 
     fun getMove(snake: Snake, field: Field, food: Food): Direction {
         val availableMoves = Direction.values().filter { isValidMove(snake, field, it) }
+
+        if (availableMoves.isEmpty()) {
+            return Direction.UP // Если нет доступных ходов, делаем что угодно, чтобы продолжить игру
+        }
+
         val safeMoves = availableMoves.filter { isSafeMove(snake, field, it) }
 
-        return if (safeMoves.isEmpty()) {
-            availableMoves.randomOrNull() ?: Direction.UP
-        } else {
-            safeMoves.maxByOrNull { evaluateMove(simulateSnakeMove(snake, it), food, field) } ?: Direction.UP
+        // Если нет безопасных ходов, выбираем ход, который максимизирует компактность
+        if (safeMoves.isEmpty()) {
+            return availableMoves.maxByOrNull { compactnessScore(simulateSnakeMove(snake, it), field) } ?: Direction.UP
         }
+
+        // Если есть безопасные ходы, выбираем лучший на основе оценки хода
+        return safeMoves.maxByOrNull { evaluateMove(simulateSnakeMove(snake, it), food, field) } ?: Direction.UP
     }
+
+    private fun compactnessScore(snake: Snake, field: Field): Int {
+        // Начинаем с максимально возможного счета, который будет уменьшаться за каждую свободную клетку рядом с змейкой
+        var score = Int.MAX_VALUE
+
+        for (segment in snake.body) {
+            for (direction in Direction.values()) {
+                val (dx, dy) = direction.toDelta()
+                val newX = segment.first + dx
+                val newY = segment.second + dy
+
+                // Убедимся, что новая позиция находится в пределах поля
+                if (newX in 0 until field.getWidth() && newY in 0 until field.getHeight()) {
+                    // Уменьшаем счет, если рядом есть свободное пространство
+                    if (field.getCellType(newX, newY) == ElementType.EMPTY) {
+                        score--
+                    }
+                }
+            }
+        }
+
+        // Возвращаем обратное значение, так как мы хотим максимизировать счет (чем меньше свободных клеток, тем лучше)
+        return -score
+    }
+
+    // Вспомогательная функция для направления
+    private fun Direction.toDelta(): Pair<Int, Int> = when (this) {
+        Direction.UP -> Pair(-1, 0)
+        Direction.DOWN -> Pair(1, 0)
+        Direction.LEFT -> Pair(0, -1)
+        Direction.RIGHT -> Pair(0, 1)
+    }
+
+
 
     private fun isSafeMove(snake: Snake, field: Field, direction: Direction): Boolean {
         val simulatedSnake = simulateSnakeMove(snake, direction)
         val accessibleArea = bfsAccessibleArea(simulatedSnake.head().first, simulatedSnake.head().second, field, simulatedSnake)
 
         val longTermSurvivability = accessibleArea.any { area ->
-            bfsAccessibleArea(area.first, area.second, field, simulatedSnake).size > simulatedSnake.body.size
+            bfsAccessibleArea(area.first, area.second, field, simulatedSnake).size > (snake.body.size * 2) + 1
         }
 
         return accessibleArea.size > (snake.body.size * 2) + 1 && longTermSurvivability
