@@ -7,7 +7,7 @@ class Graph(private val field: Field) {
     private val width = field.getWidth()
     private val height = field.getHeight()
 
-    fun findShortestPath(start: Pair<Int, Int>, end: Pair<Int, Int>): List<Pair<Int, Int>> {
+    fun findShortestPath(start: Pair<Int, Int>, end: Pair<Int, Int>, snake: Snake, field: Field): List<Pair<Int, Int>> {
         val visited = Array(height) { BooleanArray(width) }
         val queue = LinkedList<Pair<Pair<Int, Int>, List<Pair<Int, Int>>>>()
 
@@ -23,7 +23,7 @@ class Graph(private val field: Field) {
             val neighbors = getNeighbors(current)
             for (neighbor in neighbors) {
                 val (x, y) = neighbor
-                if (!visited[y][x] && field.getCellType(x, y) != ElementType.BORDER) {
+                if (!visited[y][x] && field.getCellType(x, y) != ElementType.BORDER && Pair(x, y) !in snake.body) {
                     visited[y][x] = true
                     queue.add(Pair(neighbor, path + neighbor))
                 }
@@ -33,6 +33,7 @@ class Graph(private val field: Field) {
         // If no path found, return an empty path
         return emptyList()
     }
+
 
     private fun getNeighbors(point: Pair<Int, Int>): List<Pair<Int, Int>> {
         val (x, y) = point

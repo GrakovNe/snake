@@ -12,13 +12,8 @@ class GptStrategy {
         return if (availableMoves.isEmpty()) {
             // Если доступных ходов нет, выбираем любое доступное направление,
             // чтобы избежать застревания внутри хвоста
-            val randomDirection = Direction.values().random()
-            if (isValidMove(snake, field, randomDirection)) {
-                randomDirection
-            } else {
-                // Если случайное направление недопустимо, выбираем первое доступное
-                availableMoves.first()
-            }
+            val randomDirection = Direction.values().filter { isValidMove(snake, field, it) }.randomOrNull()
+            randomDirection ?: availableMoves.first() // Вернуть случайное или первое доступное направление
         } else {
             availableMoves.maxByOrNull { evaluateMove(simulateSnakeMove(snake, it), food, field) }!!
         }
@@ -49,7 +44,7 @@ class GptStrategy {
     private fun evaluateMove(snake: Snake, food: Food, field: Field): Int {
         val head = snake.head()
         val graph = Graph(field)
-        val shortestPath = graph.findShortestPath(head, Pair(food.x, food.y))
+        val shortestPath = graph.findShortestPath(head,Pair(food.x, food.y), snake, field)
 
         return if (food.x == head.first && food.y == head.second) {
             Int.MAX_VALUE
