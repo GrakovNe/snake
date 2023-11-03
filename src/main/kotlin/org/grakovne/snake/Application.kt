@@ -2,7 +2,7 @@ package org.grakovne.snake
 
 fun main(args: Array<String>) {
 
-    val strategy = RandomSnakeStrategy()
+    val strategy = GptStrategy()
 
     var food = Food(80, 80)
     val field = Field(80, 80)

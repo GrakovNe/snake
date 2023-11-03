@@ -4,7 +4,7 @@ class Snake(point: Pair<Int, Int>) {
     val body: MutableList<Pair<Int, Int>> = mutableListOf()
     fun head() = body.first()
 
-    private var hasFood = false
+    var hasFood = false
 
     init {
         body.add(point.first to point.second)

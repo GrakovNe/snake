@@ -59,18 +59,40 @@ class Field(private val xSize: Int, private val ySize: Int) {
                     i == 0 -> {
                         elements[i][j] = ElementType.BORDER
                     }
+
                     i == xSize - 1 -> {
                         elements[i][j] = ElementType.BORDER
                     }
+
                     j == 0 -> {
                         elements[i][j] = ElementType.BORDER
                     }
+
                     j == ySize - 1 -> {
                         elements[i][j] = ElementType.BORDER
                     }
+
                     else -> elements[i][j] = ElementType.EMPTY
                 }
             }
         }
+    }
+
+    companion object {
+        fun Snake.copy(): Snake {
+            val copy = Snake(this.head())
+
+            // Копируем тело змейки
+            for (segment in body.drop(1)) {
+                copy.body.add(segment.first to segment.second)
+            }
+
+            // Копируем статус наличия еды
+            copy.hasFood = hasFood
+
+            return copy
+        }
+
+
     }
 }
