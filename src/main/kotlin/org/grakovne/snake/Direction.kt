@@ -6,11 +6,7 @@ enum class Direction {
     LEFT,
     RIGHT;
 
-
-    fun opposite() = when(this) {
-        UP -> DOWN
-        DOWN -> UP
-        LEFT -> RIGHT
-        RIGHT -> LEFT
+    companion object {
+        fun random(): Direction = values().random()
     }
 }

@@ -11,50 +11,34 @@ class GptStrategy {
 
     val fieldAccessibilityCache = ConcurrentHashMap<Pair<Int, Int>, Set<Pair<Int, Int>>>()
 
-    // Определение доступных клеток с использованием кэширования
-    fun getAccessibleAreaCached(startX: Int, startY: Int, field: Field, snake: Snake) =
-        fieldAccessibilityCache.computeIfAbsent(startX to startY) { bfsAccessibleArea(startX, startY, field, snake) }
-
     fun getMove(snake: Snake, field: Field, food: Food): Direction {
-        // Получаем все возможные ходы, которые валидны
         val availableMoves = Direction.values().filter { isValidMove(snake, field, it) }
 
         if (availableMoves.isEmpty()) {
-            return Direction.UP // Нет доступных ходов
+            return Direction.random()
         }
 
-        // Подготавливаем задачи для проверки безопасности каждого хода
         val moveChecks = availableMoves.map { direction ->
             Callable { Pair(direction, isSafeMove(snake, field, direction)) }
         }
 
-        // Запускаем все проверки параллельно
         val futures = moveChecks.map { executorService.submit(it) }
 
-        // Дожидаемся результатов всех задач
-        val safeMoves = futures.mapNotNull { future ->
-            try {
-                future.get()?.takeIf { it.second }?.first // Получаем только те направления, где ход безопасен
-            } catch (e: InterruptedException) {
-                // На случай, если выполнение было прервано
-                Thread.currentThread().interrupt()
-                null
-            } catch (e: Exception) {
-                null
+        val safeMoves = futures
+            .mapNotNull { future ->
+                future.get()?.takeIf { it.second }?.first
             }
-        }
 
-        // Выбираем лучший ход на основе полученных результатов
         return when {
             safeMoves.isNotEmpty() ->
                 safeMoves.maxByOrNull { direction ->
                     evaluateMove(simulateSnakeMove(snake, direction), food, field)
-                } ?: Direction.UP
+                } ?: Direction.random()
 
             else ->
                 availableMoves.maxByOrNull { direction ->
                     compactnessScore(simulateSnakeMove(snake, direction), field)
-                } ?: Direction.UP
+                } ?: Direction.random()
         }
     }
 
@@ -75,20 +59,20 @@ class GptStrategy {
         return score
     }
 
+    private fun getAccessibleAreaCached(startX: Int, startY: Int, field: Field, snake: Snake) =
+        fieldAccessibilityCache.computeIfAbsent(startX to startY) { bfsAccessibleArea(startX, startY, field, snake) }
 
-    // Здесь предполагается, что у Field есть методы isInBounds и isEmpty, чтобы упростить код
+
     private fun Field.isInBounds(x: Int, y: Int) = x in 0 until this.getWidth() && y in 0 until this.getHeight()
     private fun Field.isEmpty(x: Int, y: Int) = this.getCellType(x, y) == ElementType.EMPTY
 
 
-    // Вспомогательная функция для направления
     private fun Direction.toDelta(): Pair<Int, Int> = when (this) {
         Direction.UP -> Pair(-1, 0)
         Direction.DOWN -> Pair(1, 0)
         Direction.LEFT -> Pair(0, -1)
         Direction.RIGHT -> Pair(0, 1)
     }
-
 
     private fun isSafeMove(snake: Snake, field: Field, direction: Direction): Boolean {
         val simulatedSnake = simulateSnakeMove(snake, direction)
