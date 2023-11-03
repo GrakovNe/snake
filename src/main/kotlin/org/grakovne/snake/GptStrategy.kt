@@ -1,14 +1,19 @@
 package org.grakovne.snake
 
 import java.util.concurrent.Callable
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
-import java.util.concurrent.Future
 
 class GptStrategy {
 
     private val deltaMap = Direction.values().associateWith { it.toDelta() }
-
     private val executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+
+    val fieldAccessibilityCache = ConcurrentHashMap<Pair<Int, Int>, Set<Pair<Int, Int>>>()
+
+    // Определение доступных клеток с использованием кэширования
+    fun getAccessibleAreaCached(startX: Int, startY: Int, field: Field, snake: Snake) =
+        fieldAccessibilityCache.computeIfAbsent(startX to startY) { bfsAccessibleArea(startX, startY, field, snake) }
 
     fun getMove(snake: Snake, field: Field, food: Food): Direction {
         // Получаем все возможные ходы, которые валидны
@@ -45,43 +50,12 @@ class GptStrategy {
                 safeMoves.maxByOrNull { direction ->
                     evaluateMove(simulateSnakeMove(snake, direction), food, field)
                 } ?: Direction.UP
+
             else ->
                 availableMoves.maxByOrNull { direction ->
                     compactnessScore(simulateSnakeMove(snake, direction), field)
                 } ?: Direction.UP
         }
-    }
-
-    private fun filterSafeMoves(futures: List<Future<Pair<Direction, Boolean>>>): List<Direction> {
-        return futures.mapNotNull {
-            try {
-                val (direction, isSafe) = it.get() // Блокирующий вызов
-                if (isSafe) direction else null
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
-
-    private fun getBestMoveByEvaluation(
-        safeMoves: List<Direction>,
-        snake: Snake,
-        field: Field,
-        food: Food
-    ): Direction {
-        return safeMoves.maxByOrNull { direction ->
-            evaluateMove(simulateSnakeMove(snake, direction), food, field)
-        } ?: Direction.UP
-    }
-
-    private fun getBestMoveByCompactness(
-        availableMoves: List<Direction>,
-        snake: Snake,
-        field: Field
-    ): Direction {
-        return availableMoves.maxByOrNull { direction ->
-            compactnessScore(simulateSnakeMove(snake, direction), field)
-        } ?: Direction.UP
     }
 
     private fun compactnessScore(snake: Snake, field: Field): Int {
@@ -116,16 +90,17 @@ class GptStrategy {
     }
 
 
-
     private fun isSafeMove(snake: Snake, field: Field, direction: Direction): Boolean {
         val simulatedSnake = simulateSnakeMove(snake, direction)
-        val accessibleArea = bfsAccessibleArea(simulatedSnake.head().first, simulatedSnake.head().second, field, simulatedSnake)
+        val head = simulatedSnake.head()
+
+        val accessibleArea = getAccessibleAreaCached(head.first, head.second, field, simulatedSnake)
 
         val longTermSurvivability = accessibleArea.any { area ->
-            bfsAccessibleArea(area.first, area.second, field, simulatedSnake).size > (snake.body.size * 2) + 1
+            getAccessibleAreaCached(area.first, area.second, field, simulatedSnake).size > snake.body.size
         }
 
-        return accessibleArea.size > (snake.body.size * 2) + 1 && longTermSurvivability
+        return accessibleArea.size > snake.body.size && longTermSurvivability
     }
 
     private fun bfsAccessibleArea(startX: Int, startY: Int, field: Field, snake: Snake): Set<Pair<Int, Int>> {
