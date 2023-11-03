@@ -16,7 +16,12 @@ class GptStrategy {
     private fun isSafeMove(snake: Snake, field: Field, direction: Direction): Boolean {
         val simulatedSnake = simulateSnakeMove(snake, direction)
         val accessibleArea = bfsAccessibleArea(simulatedSnake.head().first, simulatedSnake.head().second, field, simulatedSnake)
-        return accessibleArea.size > (snake.body.size * 2) + 1
+
+        val longTermSurvivability = accessibleArea.any { area ->
+            bfsAccessibleArea(area.first, area.second, field, simulatedSnake).size > simulatedSnake.body.size
+        }
+
+        return accessibleArea.size > (snake.body.size * 2) + 1 && longTermSurvivability
     }
 
     private fun bfsAccessibleArea(startX: Int, startY: Int, field: Field, snake: Snake): Set<Pair<Int, Int>> {
