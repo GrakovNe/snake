@@ -45,7 +45,7 @@ fun main(args: Array<String>) {
             field.update(snake, food)
             uiKit.showField(field)
 
-            Thread.sleep(5)
+            //Thread.sleep(5)
         }
     }
 }
