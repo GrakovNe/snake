@@ -30,9 +30,10 @@ class Graph(private val field: Field) {
             }
         }
 
-        // If no path found, return an empty path
+        // Если нет пути до указанной глубины, возвращаем пустой путь
         return emptyList()
     }
+
 
 
     private fun getNeighbors(point: Pair<Int, Int>): List<Pair<Int, Int>> {
