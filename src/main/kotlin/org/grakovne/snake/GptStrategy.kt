@@ -1,48 +1,111 @@
 package org.grakovne.snake
 
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+
 class GptStrategy {
 
+    private val deltaMap = Direction.values().associateWith { it.toDelta() }
+
+    private val executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+
     fun getMove(snake: Snake, field: Field, food: Food): Direction {
+        // Получаем все возможные ходы, которые валидны
         val availableMoves = Direction.values().filter { isValidMove(snake, field, it) }
 
         if (availableMoves.isEmpty()) {
-            return Direction.UP // Если нет доступных ходов, делаем что угодно, чтобы продолжить игру
+            return Direction.UP // Нет доступных ходов
         }
 
-        val safeMoves = availableMoves.filter { isSafeMove(snake, field, it) }
-
-        // Если нет безопасных ходов, выбираем ход, который максимизирует компактность
-        if (safeMoves.isEmpty()) {
-            return availableMoves.maxByOrNull { compactnessScore(simulateSnakeMove(snake, it), field) } ?: Direction.UP
+        // Подготавливаем задачи для проверки безопасности каждого хода
+        val moveChecks = availableMoves.map { direction ->
+            Callable { Pair(direction, isSafeMove(snake, field, direction)) }
         }
 
-        // Если есть безопасные ходы, выбираем лучший на основе оценки хода
-        return safeMoves.maxByOrNull { evaluateMove(simulateSnakeMove(snake, it), food, field) } ?: Direction.UP
+        // Запускаем все проверки параллельно
+        val futures = moveChecks.map { executorService.submit(it) }
+
+        // Дожидаемся результатов всех задач
+        val safeMoves = futures.mapNotNull { future ->
+            try {
+                future.get()?.takeIf { it.second }?.first // Получаем только те направления, где ход безопасен
+            } catch (e: InterruptedException) {
+                // На случай, если выполнение было прервано
+                Thread.currentThread().interrupt()
+                null
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        // Выбираем лучший ход на основе полученных результатов
+        return when {
+            safeMoves.isNotEmpty() ->
+                safeMoves.maxByOrNull { direction ->
+                    evaluateMove(simulateSnakeMove(snake, direction), food, field)
+                } ?: Direction.UP
+            else ->
+                availableMoves.maxByOrNull { direction ->
+                    compactnessScore(simulateSnakeMove(snake, direction), field)
+                } ?: Direction.UP
+        }
+    }
+
+    private fun filterSafeMoves(futures: List<Future<Pair<Direction, Boolean>>>): List<Direction> {
+        return futures.mapNotNull {
+            try {
+                val (direction, isSafe) = it.get() // Блокирующий вызов
+                if (isSafe) direction else null
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    private fun getBestMoveByEvaluation(
+        safeMoves: List<Direction>,
+        snake: Snake,
+        field: Field,
+        food: Food
+    ): Direction {
+        return safeMoves.maxByOrNull { direction ->
+            evaluateMove(simulateSnakeMove(snake, direction), food, field)
+        } ?: Direction.UP
+    }
+
+    private fun getBestMoveByCompactness(
+        availableMoves: List<Direction>,
+        snake: Snake,
+        field: Field
+    ): Direction {
+        return availableMoves.maxByOrNull { direction ->
+            compactnessScore(simulateSnakeMove(snake, direction), field)
+        } ?: Direction.UP
     }
 
     private fun compactnessScore(snake: Snake, field: Field): Int {
-        // Начинаем с максимально возможного счета, который будет уменьшаться за каждую свободную клетку рядом с змейкой
-        var score = Int.MAX_VALUE
+        var score = 0
 
-        for (segment in snake.body) {
-            for (direction in Direction.values()) {
-                val (dx, dy) = direction.toDelta()
+        snake.body.forEach { segment ->
+            deltaMap.values.forEach { (dx, dy) ->
                 val newX = segment.first + dx
                 val newY = segment.second + dy
 
-                // Убедимся, что новая позиция находится в пределах поля
-                if (newX in 0 until field.getWidth() && newY in 0 until field.getHeight()) {
-                    // Уменьшаем счет, если рядом есть свободное пространство
-                    if (field.getCellType(newX, newY) == ElementType.EMPTY) {
-                        score--
-                    }
+                if (field.isInBounds(newX, newY) && field.isEmpty(newX, newY)) {
+                    score--
                 }
             }
         }
 
-        // Возвращаем обратное значение, так как мы хотим максимизировать счет (чем меньше свободных клеток, тем лучше)
-        return -score
+        return score
     }
+
+
+    // Здесь предполагается, что у Field есть методы isInBounds и isEmpty, чтобы упростить код
+    private fun Field.isInBounds(x: Int, y: Int) = x in 0 until this.getWidth() && y in 0 until this.getHeight()
+    private fun Field.isEmpty(x: Int, y: Int) = this.getCellType(x, y) == ElementType.EMPTY
+
 
     // Вспомогательная функция для направления
     private fun Direction.toDelta(): Pair<Int, Int> = when (this) {

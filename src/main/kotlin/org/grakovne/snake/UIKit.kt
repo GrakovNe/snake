@@ -55,7 +55,7 @@ class UIKit(xSize: Int, ySize: Int) {
             }
         }
 
-        val score = field.getCells().count { it.first == ElementType.SNAKE }
+        val score = field.getCells().count { it.first == ElementType.SNAKE } - 1
         currentScore.text = String.format("%0" + (8 - score.toString().length) + "d%s", 0, score.toString())
 
         squares.repaint()
