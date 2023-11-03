@@ -1,8 +1,6 @@
 package org.grakovne.snake
 
-import org.grakovne.snake.Field.Companion.copy
 import java.util.PriorityQueue
-import kotlin.math.abs
 
 class GptStrategy {
 
@@ -10,83 +8,69 @@ class GptStrategy {
         val headX = snake.head().first
         val headY = snake.head().second
 
-        val availableMoves = mutableListOf<Direction>()
-
-        // Проверяем доступные направления
-        if (field.getCellType(headX - 1, headY) != ElementType.BORDER && !snake.willAteSelf(Direction.UP)) {
-            availableMoves.add(Direction.UP)
-        }
-        if (field.getCellType(headX + 1, headY) != ElementType.BORDER && !snake.willAteSelf(Direction.DOWN)) {
-            availableMoves.add(Direction.DOWN)
-        }
-        if (field.getCellType(headX, headY - 1) != ElementType.BORDER && !snake.willAteSelf(Direction.LEFT)) {
-            availableMoves.add(Direction.LEFT)
-        }
-        if (field.getCellType(headX, headY + 1) != ElementType.BORDER && !snake.willAteSelf(Direction.RIGHT)) {
-            availableMoves.add(Direction.RIGHT)
-        }
-
-        // Если доступных направлений нет, то игра закончена
-        if (availableMoves.isEmpty()) {
-            return Direction.DOWN
-        }
-
-        // Создаем список для хранения путей и их оценок
-        val paths = mutableListOf<Pair<Direction, Int>>()
-
-        // Прогнозируем несколько ходов вперед
-        val lookaheadDepth = 5  // Количество ходов вперед для прогноза
-
-        for (direction in availableMoves) {
-            var simulationSnake = snake.copy()  // Создаем копию змейки для симуляции
-
-            // Симулируем движение змейки на несколько ходов вперед
-            for (i in 0 until lookaheadDepth) {
-                val nextX = when (direction) {
-                    Direction.UP -> simulationSnake.head().first - 1
-                    Direction.DOWN -> simulationSnake.head().first + 1
-                    else -> simulationSnake.head().first
-                }
-
-                val nextY = when (direction) {
-                    Direction.LEFT -> simulationSnake.head().second - 1
-                    Direction.RIGHT -> simulationSnake.head().second + 1
-                    else -> simulationSnake.head().second
-                }
-
-                if (nextX < 0 || nextX >= field.getWidth() || nextY < 0 || nextY >= field.getHeight()) {
-                    break
-                }
-
-                // Если следующий ход столкнется со стеной или хвостом, прекращаем симуляцию
-                if (field.getCellType(nextX, nextY) == ElementType.BORDER || simulationSnake.willAteSelf(direction)) {
-                    break
-                }
-
-                // Если следующий ход приводит к еде, учитываем это в оценке
-                if (nextX == food.x && nextY == food.y) {
-                    simulationSnake.grow()
-                }
-
-                // Двигаем змейку
-                simulationSnake.move(direction)
+        // Функция, которая проверяет, можно ли двигаться в заданном направлении
+        fun canMove(direction: Direction): Boolean {
+            val newHeadX = when (direction) {
+                Direction.UP -> headX - 1
+                Direction.DOWN -> headX + 1
+                Direction.LEFT -> headX
+                Direction.RIGHT -> headX
+            }
+            val newHeadY = when (direction) {
+                Direction.UP -> headY
+                Direction.DOWN -> headY
+                Direction.LEFT -> headY - 1
+                Direction.RIGHT -> headY + 1
             }
 
-            // Оценка пути (с учетом и до еды, и до хвоста в перспективе)
-            val distanceToFood = abs(simulationSnake.head().first - food.x) + abs(simulationSnake.head().second - food.y)
-            val tailDistance = simulationSnake.body.size - 1  // Длина хвоста в перспективе
+            // Проверяем, не столкнется ли змейка со стеной
+            if (newHeadX < 0 || newHeadX >= field.getWidth() || newHeadY < 0 || newHeadY >= field.getHeight()) {
+                return false
+            }
 
-            val totalDistance = distanceToFood + tailDistance
+            // Проверяем, не столкнется ли змейка с самой собой
+            val newHead = newHeadX to newHeadY
+            if (snake.body.contains(newHead)) {
+                return false
+            }
 
-            paths.add(direction to totalDistance)
+            return true
         }
 
-        // Сортируем направления по оценкам (по возрастанию)
-        val sortedPaths = paths.sortedBy { it.second }
+        // Возможные направления движения
+        val possibleDirections = mutableListOf<Direction>()
 
-        // Возвращаем наилучшее направление (с наименьшей оценкой)
-        return sortedPaths.first().first
+        // Добавляем направления, в которые можно двигаться
+        if (canMove(Direction.UP)) {
+            possibleDirections.add(Direction.UP)
+        }
+        if (canMove(Direction.DOWN)) {
+            possibleDirections.add(Direction.DOWN)
+        }
+        if (canMove(Direction.LEFT)) {
+            possibleDirections.add(Direction.LEFT)
+        }
+        if (canMove(Direction.RIGHT)) {
+            possibleDirections.add(Direction.RIGHT)
+        }
+
+        // Если есть еда, выбираем направление к ней
+        if (possibleDirections.isNotEmpty()) {
+            val foodX = food.x
+            val foodY = food.y
+            val minDistanceDirection = possibleDirections.minByOrNull {
+                when (it) {
+                    Direction.UP -> Math.abs(headX - 1 - foodX) + Math.abs(headY - foodY)
+                    Direction.DOWN -> Math.abs(headX + 1 - foodX) + Math.abs(headY - foodY)
+                    Direction.LEFT -> Math.abs(headX - foodX) + Math.abs(headY - 1 - foodY)
+                    Direction.RIGHT -> Math.abs(headX - foodX) + Math.abs(headY + 1 - foodY)
+                }
+            }
+            return minDistanceDirection ?: possibleDirections.random()
+        }
+
+        // Если нет еды, выбираем любое доступное направление
+        return possibleDirections.random()
     }
-
 
 }

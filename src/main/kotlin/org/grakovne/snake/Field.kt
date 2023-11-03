@@ -7,6 +7,19 @@ class Field(private val xSize: Int, private val ySize: Int) {
         drawBorders()
     }
 
+    fun copy(): Field {
+        val newField = Field(xSize, ySize)
+
+        for (i in 0 until xSize) {
+            for (j in 0 until ySize) {
+                newField.elements[i][j] = elements[i][j]
+            }
+        }
+
+        return newField
+    }
+
+
     fun getCells(): MutableList<Pair<ElementType, Pair<Int, Int>>> {
         val result = mutableListOf<Pair<ElementType, Pair<Int, Int>>>()
 

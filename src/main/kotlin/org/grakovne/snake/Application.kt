@@ -8,13 +8,17 @@ fun main(args: Array<String>) {
     val field = Field(80, 80)
     val uiKit = UIKit(80, 80)
 
-    var snake = Snake(field.getRandomFreeCell())
+    var snake = Snake(40 to 40)
+
+    while (food.x == 40 && food.y == 40) {
+        food = Food(80, 80)
+    }
+
     field.update(snake, food)
     uiKit.showField(field)
 
 
     while (true) {
-        food = Food(80, 80)
         snake = Snake(field.getRandomFreeCell())
 
         while (true) {
