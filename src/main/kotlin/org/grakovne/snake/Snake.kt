@@ -8,6 +8,7 @@ class Snake(point: Pair<Int, Int>) {
 
     init {
         body.add(point.first to point.second)
+        body.add(point.first to point.second + 1)
     }
 
 

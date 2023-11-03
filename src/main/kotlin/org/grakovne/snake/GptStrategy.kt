@@ -1,38 +1,42 @@
 package org.grakovne.snake
 
-
 class GptStrategy {
 
     fun getMove(snake: Snake, field: Field, food: Food): Direction {
-        if (snake.body.size == field.getWidth() * field.getHeight() - 1) {
-            // The snake has filled the entire field, game over.
-            throw IllegalStateException("No moves available, the snake has filled the entire field.")
+        require(snake.body.size < field.getWidth() * field.getHeight() - 1) {
+            "No moves available, the snake has filled the entire field."
         }
 
-        return moveToFood(snake, field, food)
-    }
+        val availableMoves = Direction.values().filter { isValidMove(snake, field, it) }
 
-    fun moveToFood(snake: Snake, field: Field, food: Food): Direction {
-        return getBestMove(snake, field, food, 0)?.first ?: throw IllegalStateException("No moves available")
-    }
-
-    private fun getBestMove(snake: Snake, field: Field, food: Food, depth: Int): Pair<Direction, Int>? {
-        if (depth == 11) return null
-
-        return Direction
-            .values()
-            .asSequence()
-            .filter { direction -> !snake.willAteSelf(direction) && !willCollideWithBorder(snake, field, direction) }
-            .mapNotNull { direction ->
-                val simulatedSnake = simulateSnakeMove(snake, direction)
-                val score = evaluateMove(simulatedSnake, food, field)
-
-                val nextMove = getBestMove(simulatedSnake, field, food, depth + 1)
-                val nextScore = nextMove?.second ?: 0
-
-                if (isDeadEnd(simulatedSnake, field)) null else direction to (score + nextScore)
+        return if (availableMoves.isEmpty()) {
+            // Если доступных ходов нет, выбираем любое доступное направление,
+            // чтобы избежать застревания внутри хвоста
+            val randomDirection = Direction.values().random()
+            if (isValidMove(snake, field, randomDirection)) {
+                randomDirection
+            } else {
+                // Если случайное направление недопустимо, выбираем первое доступное
+                availableMoves.first()
             }
-            .maxByOrNull { it.second }
+        } else {
+            availableMoves.maxByOrNull { evaluateMove(simulateSnakeMove(snake, it), food, field) }!!
+        }
+    }
+
+    private fun isValidMove(snake: Snake, field: Field, direction: Direction): Boolean {
+        val head = snake.head()
+        val (x, y) = when (direction) {
+            Direction.UP -> Pair(head.first - 1, head.second)
+            Direction.DOWN -> Pair(head.first + 1, head.second)
+            Direction.LEFT -> Pair(head.first, head.second - 1)
+            Direction.RIGHT -> Pair(head.first, head.second + 1)
+        }
+
+        return (x in 0 until field.getWidth() && y in 0 until field.getHeight() &&
+                field.getCellType(x, y) != ElementType.BORDER &&
+                field.getCellType(x, y) != ElementType.SNAKE &&
+                Pair(x, y) !in snake.body)
     }
 
     private fun simulateSnakeMove(snake: Snake, direction: Direction): Snake {
@@ -44,32 +48,15 @@ class GptStrategy {
 
     private fun evaluateMove(snake: Snake, food: Food, field: Field): Int {
         val head = snake.head()
-        val foodDistance = Math.abs(food.x - head.first) + Math.abs(food.y - head.second)
-        return (field.getWidth() * field.getHeight()) - foodDistance // A simple heuristic
-    }
+        val graph = Graph(field)
+        val shortestPath = graph.findShortestPath(head, Pair(food.x, food.y))
 
-    private fun willCollideWithBorder(snake: Snake, field: Field, direction: Direction): Boolean {
-        val head = snake.head()
-        return when (direction) {
-            Direction.UP -> field.getCellType(head.first - 1, head.second) == ElementType.BORDER
-            Direction.DOWN -> field.getCellType(head.first + 1, head.second) == ElementType.BORDER
-            Direction.LEFT -> field.getCellType(head.first, head.second - 1) == ElementType.BORDER
-            Direction.RIGHT -> field.getCellType(head.first, head.second + 1) == ElementType.BORDER
+        return if (food.x == head.first && food.y == head.second) {
+            Int.MAX_VALUE
+        } else if (shortestPath.isEmpty()) {
+            0
+        } else {
+            field.getWidth() * field.getHeight() - shortestPath.size
         }
     }
-
-    private fun isDeadEnd(snake: Snake, field: Field): Boolean {
-        val head = snake.head()
-        val directions = listOf(
-            head.first - 1 to head.second,
-            head.first + 1 to head.second,
-            head.first to head.second - 1,
-            head.first to head.second + 1
-        )
-
-        return directions.count { (x, y) ->
-            field.getCellType(x, y) != ElementType.BORDER && (x to y !in snake.body)
-        } <= 1
-    }
-
 }

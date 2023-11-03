@@ -28,8 +28,6 @@ fun main(args: Array<String>) {
                 break
             }
 
-            snake.move(direction)
-
             if (food.x == snake.head().first && food.y == snake.head().second) {
                 snake.grow()
                 food = Food(80, 80)
@@ -42,10 +40,11 @@ fun main(args: Array<String>) {
                 break
             }
 
+            snake.move(direction)
+
             field.update(snake, food)
             uiKit.showField(field)
-
-            //Thread.sleep(5)
+            //Thread.sleep(1000)
         }
     }
 }
