@@ -35,7 +35,7 @@ class GptStrategy {
         return when {
             safeMoves.isNotEmpty() ->
                 safeMoves.maxByOrNull { direction ->
-                    evaluateMove(simulateSnakeMove(snake, direction), food, field)
+                    evaluateMove(simulateSnakeMove(snake, direction), food, field, direction)
                 } ?: Direction.random()
 
             else ->
@@ -123,6 +123,19 @@ class GptStrategy {
 
         return visited
     }
+
+    private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Int {
+        val head = snake.head()
+        val graph = Graph(field)
+        val shortestPath = graph.findShortestPath(head, Pair(food.x, food.y), snake, field)
+        val compactness = compactnessScore(simulateSnakeMove(snake, direction), field)
+
+        return when {
+            food.x == head.first && food.y == head.second -> Int.MAX_VALUE
+            shortestPath.isEmpty() -> 0
+            else -> field.getWidth() * field.getHeight() - shortestPath.size + (0.2*compactness).toInt()
+        }
+    }
 }
 
 private fun isValidMove(snake: Snake, field: Field, direction: Direction): Boolean {
@@ -145,16 +158,4 @@ private fun simulateSnakeMove(snake: Snake, direction: Direction): Snake {
     newSnake.body.addAll(snake.body.drop(1))
     newSnake.move(direction)
     return newSnake
-}
-
-private fun evaluateMove(snake: Snake, food: Food, field: Field): Int {
-    val head = snake.head()
-    val graph = Graph(field)
-    val shortestPath = graph.findShortestPath(head, Pair(food.x, food.y), snake, field)
-
-    return when {
-        food.x == head.first && food.y == head.second -> Int.MAX_VALUE
-        shortestPath.isEmpty() -> 0
-        else -> field.getWidth() * field.getHeight() - shortestPath.size
-    }
 }
