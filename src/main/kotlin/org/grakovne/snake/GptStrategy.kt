@@ -3,19 +3,12 @@ package org.grakovne.snake
 class GptStrategy {
 
     fun getMove(snake: Snake, field: Field, food: Food): Direction {
-        require(snake.body.size < field.getWidth() * field.getHeight() - 1) {
-            "No moves available, the snake has filled the entire field."
-        }
-
         val availableMoves = Direction.values().filter { isValidMove(snake, field, it) }
 
         return if (availableMoves.isEmpty()) {
-            // Если доступных ходов нет, выбираем любое доступное направление,
-            // чтобы избежать застревания внутри хвоста
-            val randomDirection = Direction.values().filter { isValidMove(snake, field, it) }.randomOrNull()
-            randomDirection ?: availableMoves.first() // Вернуть случайное или первое доступное направление
+            availableMoves.randomOrNull() ?: Direction.UP
         } else {
-            availableMoves.maxByOrNull { evaluateMove(simulateSnakeMove(snake, it), food, field) }!!
+            availableMoves.maxByOrNull { evaluateMove(simulateSnakeMove(snake, it), food, field) } ?: Direction.UP
         }
     }
 
@@ -44,14 +37,12 @@ class GptStrategy {
     private fun evaluateMove(snake: Snake, food: Food, field: Field): Int {
         val head = snake.head()
         val graph = Graph(field)
-        val shortestPath = graph.findShortestPath(head,Pair(food.x, food.y), snake, field)
+        val shortestPath = graph.findShortestPath(head, Pair(food.x, food.y), snake, field)
 
-        return if (food.x == head.first && food.y == head.second) {
-            Int.MAX_VALUE
-        } else if (shortestPath.isEmpty()) {
-            0
-        } else {
-            field.getWidth() * field.getHeight() - shortestPath.size
+        return when {
+            food.x == head.first && food.y == head.second -> Int.MAX_VALUE
+            shortestPath.isEmpty() -> 0
+            else -> field.getWidth() * field.getHeight() - shortestPath.size
         }
     }
 }
