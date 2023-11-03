@@ -12,6 +12,7 @@ fun main(args: Array<String>) {
     field.update(snake, food)
     uiKit.showField(field)
 
+
     while (true) {
         food = Food(80, 80)
         snake = Snake(field.getRandomFreeCell())

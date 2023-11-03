@@ -35,7 +35,7 @@ class GptStrategy {
         val paths = mutableListOf<Pair<Direction, Int>>()
 
         // Прогнозируем несколько ходов вперед
-        val lookaheadDepth = 3  // Количество ходов вперед для прогноза
+        val lookaheadDepth = 5  // Количество ходов вперед для прогноза
 
         for (direction in availableMoves) {
             var simulationSnake = snake.copy()  // Создаем копию змейки для симуляции
