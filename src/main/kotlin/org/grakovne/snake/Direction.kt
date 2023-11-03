@@ -9,4 +9,12 @@ enum class Direction {
     companion object {
         fun random(): Direction = values().random()
     }
+
+    fun opposite() = when(this) {
+        UP -> DOWN
+        DOWN -> UP
+        LEFT -> RIGHT
+        RIGHT -> LEFT
+    }
+
 }

@@ -11,8 +11,11 @@ class GptStrategy {
 
     val fieldAccessibilityCache = ConcurrentHashMap<Pair<Int, Int>, Set<Pair<Int, Int>>>()
 
-    fun getMove(snake: Snake, field: Field, food: Food): Direction {
-        val availableMoves = Direction.values().filter { isValidMove(snake, field, it) }
+    fun getMove(snake: Snake, field: Field, food: Food, previousDirection: Direction?): Direction {
+        val availableMoves = Direction
+            .values()
+            .filter { it != previousDirection?.opposite() }
+            .filter { isValidMove(snake, field, it) }
 
         if (availableMoves.isEmpty()) {
             return Direction.random()

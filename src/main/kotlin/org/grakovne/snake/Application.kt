@@ -18,9 +18,11 @@ fun main(args: Array<String>) {
 
     gameLoop@ while (true) {
         snake = Snake(field.getRandomFreeCell())
+        var direction: Direction = strategy.getMove(snake, field, food, null)
 
         while (true) {
-            val direction = strategy.getMove(snake, field, food)
+            direction = strategy.getMove(snake, field, food, direction)
+
             if (snake.willAteSelf(direction)) {
                 throw RuntimeException("Bot is Dead")
             }
