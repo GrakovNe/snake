@@ -29,7 +29,7 @@ class GptStrategy {
 
     private fun simulateSnakeMove(snake: Snake, direction: Direction): Snake {
         val newSnake = Snake(snake.head())
-        newSnake.body.addAll(snake.body)
+        newSnake.body.addAll(snake.body.drop(1))
         newSnake.move(direction)
         return newSnake
     }
