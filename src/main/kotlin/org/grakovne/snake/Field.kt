@@ -100,6 +100,14 @@ class Field(private val xSize: Int, private val ySize: Int) {
     }
 
     companion object {
+        fun Field.isCellFree(cell: Pair<Int, Int>): Boolean {
+            val (x, y) = cell
+            return x in 0 until this.getWidth() &&
+                    y in 0 until this.getHeight() &&
+                    this.getCellType(x, y) != ElementType.BORDER &&
+                    this.getCellType(x, y) != ElementType.SNAKE
+        }
+
         fun Snake.copy(): Snake {
             val copy = Snake(this.head())
 
@@ -113,7 +121,5 @@ class Field(private val xSize: Int, private val ySize: Int) {
 
             return copy
         }
-
-
     }
 }

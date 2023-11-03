@@ -10,7 +10,7 @@ fun main(args: Array<String>) {
 
     var snake = Snake(40 to 40)
 
-    while (food.x == 40 && food.y == 40) {
+    while (food.x != 40 && food.y != 40) {
         food = Food(80, 80)
     }
 
@@ -31,6 +31,10 @@ fun main(args: Array<String>) {
             if (food.x == snake.head().first && food.y == snake.head().second) {
                 snake.grow()
                 food = Food(80, 80)
+
+                while (snake.body.contains(food.x to food.y)) {
+                    food = Food(80, 80)
+                }
             }
 
             if (isBorderCell(snake.head(), field) || isBeyondCell(snake.head(), field)) {
