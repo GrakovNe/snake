@@ -36,8 +36,8 @@ class UIKit(xSize: Int, ySize: Int) {
 
         about.setBounds(xSize * 10 + 75, 10 * ySize - 10, 200, 50)
         about.isVisible = true
-        about.text = "@grakovne"
-        about.font = about.font.deriveFont(12.0.toFloat())
+        about.text = "https://github.com/GrakovNe/snake"
+        about.font = about.font.deriveFont(11.0.toFloat())
         about.font = about.font.deriveFont(0)
         about.horizontalAlignment = SwingConstants.CENTER
 

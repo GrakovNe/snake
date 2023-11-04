@@ -4,7 +4,7 @@ import org.grakovne.snake.neural.GptStrategy
 import java.lang.RuntimeException
 
 fun main(args: Array<String>) {
-    val size = 15
+    val size = 60
     val strategy = GptStrategy()
     val field = Field(size, size)
     val uiKit = UIKit(size, size)
@@ -16,7 +16,7 @@ fun main(args: Array<String>) {
     field.update(snake, food)
     uiKit.showField(field)
 
-    val minimalStepTime = 10
+    val minimalStepTime = 50
 
     gameLoop@ while (true) {
         snake = Snake(field.getRandomFreeCell())

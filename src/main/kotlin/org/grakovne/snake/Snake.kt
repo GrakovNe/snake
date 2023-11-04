@@ -1,7 +1,9 @@
 package org.grakovne.snake
 
+import java.util.LinkedList
+
 class Snake(point: Pair<Int, Int>) {
-    val body: MutableList<Pair<Int, Int>> = mutableListOf()
+    val body: MutableList<Pair<Int, Int>> = LinkedList()
     fun head() = body.first()
 
     var hasFood = false
