@@ -91,9 +91,9 @@ class GptStrategy {
             }
         }
 
-        return when(isLastRowMove(snake, field, direction)){
+        return when (isLastRowMove(snake, field, direction)) {
             false -> score
-            true -> (score * 0.5).toInt()
+            true -> Int.MIN_VALUE
         }
     }
 
@@ -178,7 +178,7 @@ class GptStrategy {
 
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
-            bestPath.isEmpty() -> 0
+            bestPath.isEmpty() -> Int.MIN_VALUE
             else -> field.getWidth() * field.getHeight() - bestPath.size + (0.5 * compactness).toInt() + enclosed
         }
     }
