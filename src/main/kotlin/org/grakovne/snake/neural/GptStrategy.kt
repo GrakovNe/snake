@@ -46,7 +46,7 @@ class GptStrategy {
         return when {
             safeMoves.isNotEmpty() ->
                 safeMoves.maxByOrNull { direction ->
-                    evaluateMove(simulateSnakeMove(snake, direction), food, field, direction)
+                    evaluateMove(simulateSnakeMove(snake, direction), food, field)
                 } ?: Direction.random()
 
             else ->
@@ -181,17 +181,15 @@ class GptStrategy {
     }
 
 
-    private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Int {
+    private fun evaluateMove(snake: Snake, food: Food, field: Field): Int {
         val head = snake.head()
         val safeGraph = SafeGraph(field)
 
-        val simulatedMove = simulateSnakeMove(snake, direction)
-
         val safestPath = safeGraph.findSafestPath(head, BodyItem(food.x, food.y), snake)
 
-        val compactness = compactnessScore(simulatedMove, field)
-        val enclosed = evaluateEnclosingPotential(simulatedMove, field)
-        val trapPotential = trapPotentialAfterEating(simulatedMove, field)
+        val compactness = compactnessScore(snake, field)
+        val enclosed = evaluateEnclosingPotential(snake, field)
+        val trapPotential = trapPotentialAfterEating(snake, field)
 
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
