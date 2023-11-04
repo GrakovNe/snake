@@ -1,15 +1,20 @@
 package org.grakovne.snake
 
 import org.grakovne.snake.neural.GptStrategy
-import java.lang.RuntimeException
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+
 
 fun main(args: Array<String>) {
     val size = 60
     val strategy = GptStrategy()
     val totalGames = 5
     val results = IntArray(totalGames)
-    val threads = List(totalGames) { gameIndex ->
-        Thread {
+
+    val executorService = Executors.newWorkStealingPool()
+
+    for (gameIndex in 0 until totalGames) {
+        executorService.submit {
             val field = Field(size, size)
             val snake = Snake(BodyItem(1, 1))
             var food = Food(size, size)
@@ -46,8 +51,15 @@ fun main(args: Array<String>) {
         }
     }
 
-    threads.forEach(Thread::start) // Запускаем все потоки
-    threads.forEach(Thread::join) // Дожидаемся окончания всех потоков
+    executorService.shutdown() // Завершаем работу пула потоков
+    try {
+        executorService.awaitTermination(
+            Long.MAX_VALUE,
+            TimeUnit.NANOSECONDS
+        ) // Ждем, пока все задачи не будут выполнены
+    } catch (e: InterruptedException) {
+        println("Threads interrupted: ${e.message}")
+    }
 
     val sortedResults = results.sorted()
     val tenPercentCount = totalGames / 10
