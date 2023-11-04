@@ -143,11 +143,17 @@ class GptStrategy {
         return accessibleArea
     }
 
-    private fun evaluateCompactness(snake: Snake): Int {
+    private fun evaluateCompactness(snake: Snake, field: Field): Int {
         var compactnessScore = 0
         val body = snake.body.toList()
 
-        // Для каждого сегмента змейки проверяем соседние сегменты
+        val edgePenalty = 10 // Устанавливаем штраф за расположение в крайних рядах и столбцах.
+
+        // Получаем размеры поля для проверки крайних рядов и столбцов
+        val maxWidth = field.getWidth()
+        val maxHeight = field.getHeight()
+
+        // Для каждого сегмента змейки проверяем соседние сегменты и штрафуем за крайние позиции
         for (i in 0 until body.size) {
             val current = body[i]
             val neighbors = listOf(
@@ -159,16 +165,19 @@ class GptStrategy {
 
             var localCompactness = 0
 
-            // Если у текущего сегмента есть соседи по горизонтали и вертикали, увеличиваем локальную компактность
             for (neighbor in neighbors) {
                 if (neighbor in body) {
                     localCompactness++
                 }
             }
 
-            // Поощряем сегменты, имеющие больше соседей (т.е. находящиеся в углах квадратов или прямоугольников)
             if (localCompactness > 1) {
                 compactnessScore += localCompactness
+            }
+
+            // Штрафуем сегменты на краях
+            if (current.first == 0 || current.first == maxWidth - 1 || current.second == 0 || current.second == maxHeight - 1) {
+                compactnessScore -= edgePenalty
             }
         }
 
@@ -195,21 +204,45 @@ class GptStrategy {
         return -enclosureRisk
     }
 
+    private fun evaluateLinearity(snake: Snake): Int {
+        var linearityPenalty = 0
+
+        // Получаем все сегменты змейки
+        val body = snake.body.toList()
+
+        // Проходим по всем сегментам змейки
+        for (i in 1 until body.size - 1) { // Игнорируем голову и хвост для линейности
+            val prev = body[i - 1]
+            val curr = body[i]
+            val next = body[i + 1]
+
+            // Проверяем, лежат ли предыдущий и следующий сегменты в одной линии с текущим
+            if ((prev.first == curr.first && curr.first == next.first) || (prev.second == curr.second && curr.second == next.second)) {
+                linearityPenalty++
+            }
+        }
+
+        // Возвращаем штраф за линейность, отрицательное значение, поскольку мы хотим минимизировать линейность
+        return -linearityPenalty
+    }
+
+
 
     private fun evaluateMove(snake: Snake, food: Food, field: Field): Int {
         val head = snake.head()
         val safeGraph = SafeGraph(field)
 
+        val linearity = evaluateLinearity(snake)
         val safestPath = safeGraph.findSafestPath(head, BodyItem(food.x, food.y), snake)
 
         val enclosed = evaluateEnclosingPotential(snake, field)
-        val compactness = evaluateCompactness(snake)
+        val compactness = evaluateCompactness(snake, field)
         val enclosureRisk = evaluateEnclosureRisk(snake, field)
 
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             safestPath.isEmpty() -> Int.MIN_VALUE
-            else -> field.getWidth() * field.getHeight() - (safestPath.size) - enclosed + (compactness) - enclosureRisk
+            else -> field.getWidth() * field.getHeight() - (safestPath.size) - enclosed + (compactness) - enclosureRisk + linearity
         }
     }
 }
