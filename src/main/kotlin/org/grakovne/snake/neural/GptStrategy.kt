@@ -147,24 +147,53 @@ class GptStrategy {
         var compactnessScore = 0
         val body = snake.body.toList()
 
-        // Проходим по всем сегментам тела змейки, кроме головы и хвоста
-        for (i in 1 until body.size - 1) {
-            val prev = body[i - 1]
+        // Для каждого сегмента змейки проверяем соседние сегменты
+        for (i in 0 until body.size) {
             val current = body[i]
-            val next = body[i + 1]
+            val neighbors = listOf(
+                BodyItem(current.first - 1, current.second),
+                BodyItem(current.first + 1, current.second),
+                BodyItem(current.first, current.second - 1),
+                BodyItem(current.first, current.second + 1)
+            )
 
-            // Если текущий сегмент создает "изгиб" между предыдущим и следующим, увеличиваем счет
-            if ((prev.first == current.first && current.second == next.second) ||
-                (prev.second == current.second && current.first == next.first)
-            ) {
-                compactnessScore++
+            var localCompactness = 0
+
+            // Если у текущего сегмента есть соседи по горизонтали и вертикали, увеличиваем локальную компактность
+            for (neighbor in neighbors) {
+                if (neighbor in body) {
+                    localCompactness++
+                }
+            }
+
+            // Поощряем сегменты, имеющие больше соседей (т.е. находящиеся в углах квадратов или прямоугольников)
+            if (localCompactness > 1) {
+                compactnessScore += localCompactness
             }
         }
 
-        // Можно настроить вес этой оценки в зависимости от предпочтений в игре
-        return compactnessScore
+        // Поскольку мы хотим предпочесть квадратные формы, вычитаем длину змейки,
+        // чтобы дать высший балл более компактным формам.
+        return compactnessScore - body.size
     }
 
+
+    private fun evaluateEnclosureRisk(snake: Snake, field: Field): Int {
+        val head = snake.head()
+        val accessibleArea = bfsAccessibleArea(head.first, head.second, field)
+        val snakeSize = snake.body.size
+
+        // "Степень замкнутости" рассчитывается как отношение размера доступной области к размеру змейки.
+        // Чем меньше доступная область по сравнению с размером змейки, тем выше риск замкнуть себя.
+        val enclosureRisk = if (accessibleArea.size < snakeSize * 2) {
+            (snakeSize * 2 - accessibleArea.size) // Возвращаем отрицательное значение, которое будет вычитаться из общего счета
+        } else {
+            0 // Нет риска
+        }
+
+        // Возвращаем обратное значение риска, так как более высокий риск замкнутости должен уменьшать общий балл хода.
+        return -enclosureRisk
+    }
 
 
     private fun evaluateMove(snake: Snake, food: Food, field: Field): Int {
@@ -175,11 +204,12 @@ class GptStrategy {
 
         val enclosed = evaluateEnclosingPotential(snake, field)
         val compactness = evaluateCompactness(snake)
+        val enclosureRisk = evaluateEnclosureRisk(snake, field)
 
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             safestPath.isEmpty() -> Int.MIN_VALUE
-            else -> field.getWidth() * field.getHeight() - (2 * safestPath.size) - enclosed  + compactness
+            else -> field.getWidth() * field.getHeight() - (safestPath.size) - enclosed + (compactness) - enclosureRisk
         }
     }
 }
