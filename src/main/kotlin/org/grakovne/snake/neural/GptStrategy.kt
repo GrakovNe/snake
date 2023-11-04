@@ -43,18 +43,10 @@ class GptStrategy {
             }
         }
 
-        return when {
-            safeMoves.isNotEmpty() ->
-                safeMoves.maxByOrNull { direction ->
-                    evaluateMove(simulateSnakeMove(snake, direction), food, field)
-                } ?: Direction.random()
-
-            else ->
-                availableMoves
-                    .maxByOrNull { direction ->
-                        compactnessScore(simulateSnakeMove(snake, direction), field)
-                    } ?: Direction.random()
-        }
+        return safeMoves
+            .maxByOrNull { direction ->
+                evaluateMove(simulateSnakeMove(snake, direction), food, field)
+            } ?: Direction.random()
     }
 
     private fun evaluateEnclosingPotential(snake: Snake, field: Field): Int {
@@ -78,24 +70,6 @@ class GptStrategy {
 
         // Возвращаем обратное значение, потому что меньшее количество "дыр" - лучше
         return -enclosingPotential
-    }
-
-
-    private fun compactnessScore(snake: Snake, field: Field): Int {
-        var score = 0
-
-        snake.body.forEach { segment ->
-            deltaMap.values.forEach { (dx, dy) ->
-                val newX = segment.first + dx
-                val newY = segment.second + dy
-
-                if (field.isInBounds(newX, newY) && field.isEmpty(newX, newY)) {
-                    score--
-                }
-            }
-        }
-
-        return score
     }
 
     private fun getAccessibleAreaCached(startX: Int, startY: Int, field: Field, snake: Snake) =
@@ -187,14 +161,13 @@ class GptStrategy {
 
         val safestPath = safeGraph.findSafestPath(head, BodyItem(food.x, food.y), snake)
 
-        val compactness = compactnessScore(snake, field)
         val enclosed = evaluateEnclosingPotential(snake, field)
         val trapPotential = trapPotentialAfterEating(snake, field)
 
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             safestPath.isEmpty() -> Int.MIN_VALUE
-            else -> field.getWidth() * field.getHeight() - (2 * safestPath.size) + (0.5 * compactness).toInt() + enclosed + trapPotential
+            else -> field.getWidth() * field.getHeight() - (2 * safestPath.size) - enclosed - trapPotential
         }
     }
 }
