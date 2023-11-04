@@ -143,17 +143,6 @@ class GptStrategy {
         return accessibleArea
     }
 
-    private fun trapPotentialAfterEating(snake: Snake, field: Field): Int {
-        val headAfterEating = snake.head()
-        val accessibleAreaAfterEating =
-            getAccessibleAreaCached(headAfterEating.first, headAfterEating.second, field, snake)
-
-        // Проверяем, останется ли достаточно места для движения
-        val remainingArea = accessibleAreaAfterEating.size - snake.body.size
-        return if (remainingArea < 0) Int.MIN_VALUE / 2 // Назначаем большое штрафное значение, если змейка заперла себя
-        else 0 // Без штрафа, если достаточно места
-    }
-
     private fun evaluateCompactness(snake: Snake): Int {
         var compactnessScore = 0
         val body = snake.body.toList()
@@ -185,13 +174,12 @@ class GptStrategy {
         val safestPath = safeGraph.findSafestPath(head, BodyItem(food.x, food.y), snake)
 
         val enclosed = evaluateEnclosingPotential(snake, field)
-        val trapPotential = trapPotentialAfterEating(snake, field)
         val compactness = evaluateCompactness(snake)
 
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             safestPath.isEmpty() -> Int.MIN_VALUE
-            else -> field.getWidth() * field.getHeight() - (2 * safestPath.size) - enclosed - trapPotential + compactness
+            else -> field.getWidth() * field.getHeight() - (2 * safestPath.size) - enclosed  + compactness
         }
     }
 }
