@@ -45,6 +45,37 @@ class GptStrategy {
         }
     }
 
+    private fun evaluateEnclosingPotential(snake: Snake, field: Field, direction: Direction): Int {
+        // Симулируем ход змейки
+        val simulatedSnake = simulateSnakeMove(snake, direction)
+
+        // Получаем позицию головы после симулированного хода
+        val head = simulatedSnake.head()
+
+        // Ищем "дыры" вокруг головы
+        var enclosingPotential = 0
+        deltaMap.values.forEach { (dx, dy) ->
+            val neighborX = head.first + dx
+            val neighborY = head.second + dy
+
+            if (field.isInBounds(neighborX, neighborY)) {
+                val neighbor = Pair(neighborX, neighborY)
+                // Если рядом есть пустая клетка, проверяем, не образует ли она "дыру"
+                if (field.isEmpty(neighborX, neighborY) && !simulatedSnake.body.contains(neighbor)) {
+                    val area = bfsAccessibleArea(neighborX, neighborY, field, simulatedSnake)
+                    // Если "дыра" маленькая, это потенциально хорошо, так как её легче замкнуть
+                    if (area.size <= snake.body.size) {
+                        enclosingPotential += area.size
+                    }
+                }
+            }
+        }
+
+        // Возвращаем обратное значение, потому что меньшее количество "дыр" - лучше
+        return -enclosingPotential
+    }
+
+
     private fun compactnessScore(snake: Snake, field: Field): Int {
         var score = 0
 
@@ -129,11 +160,12 @@ class GptStrategy {
         val graph = Graph(field)
         val shortestPath = graph.findShortestPath(head, Pair(food.x, food.y), snake, field)
         val compactness = compactnessScore(simulateSnakeMove(snake, direction), field)
+        val enclosed = evaluateEnclosingPotential(simulateSnakeMove(snake, direction), field, direction)
 
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             shortestPath.isEmpty() -> 0
-            else -> field.getWidth() * field.getHeight() - shortestPath.size + (0.5 * compactness).toInt()
+            else -> field.getWidth() * field.getHeight() - shortestPath.size + (0.5 * compactness).toInt() + enclosed
         }
     }
 }
