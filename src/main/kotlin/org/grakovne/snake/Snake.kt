@@ -1,16 +1,13 @@
 package org.grakovne.snake
 
-import java.util.LinkedList
-
-class Snake(point: Pair<Int, Int>) {
-    val body: MutableList<Pair<Int, Int>> = LinkedList()
+class Snake(point: BodyItem) {
+    val body: MutableList<BodyItem> = ArrayList()
     fun head() = body.first()
 
     var hasFood = false
 
     init {
-        body.add(point.first to point.second)
-        body.add(point.first to point.second + 1)
+        body.add(BodyItem(point.first, point.second))
     }
 
 
@@ -19,10 +16,10 @@ class Snake(point: Pair<Int, Int>) {
         val headY = body.first().second
 
         val newHead = when (direction) {
-            Direction.UP -> headX - 1 to headY
-            Direction.DOWN -> headX + 1 to headY
-            Direction.LEFT -> headX to headY - 1
-            Direction.RIGHT -> headX to headY + 1
+            Direction.UP -> BodyItem(headX - 1, headY)
+            Direction.DOWN -> BodyItem(headX + 1, headY)
+            Direction.LEFT -> BodyItem(headX, headY - 1)
+            Direction.RIGHT -> BodyItem(headX, headY + 1)
         }
 
         return body.any { it == newHead }
@@ -37,12 +34,10 @@ class Snake(point: Pair<Int, Int>) {
         val headY = body.first().second
 
         val newHead = when (direction) {
-            Direction.UP -> headX - 1 to headY
-            Direction.DOWN -> headX + 1 to headY
-            Direction.LEFT -> headX to headY - 1
-            Direction.RIGHT -> headX to headY + 1
-
-
+            Direction.UP -> BodyItem(headX - 1, headY)
+            Direction.DOWN -> BodyItem(headX + 1, headY)
+            Direction.LEFT -> BodyItem(headX, headY - 1)
+            Direction.RIGHT -> BodyItem(headX, headY + 1)
         }
 
         body.drop(1)

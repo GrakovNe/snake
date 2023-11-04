@@ -9,17 +9,18 @@ fun main(args: Array<String>) {
     val field = Field(size, size)
     val uiKit = UIKit(size, size)
 
-    var snake = Snake(1 to 1)
+    var snake = Snake(BodyItem(1, 1))
     var food = Food(size, size)
 
 
     field.update(snake, food)
     uiKit.showField(field)
 
-    val minimalStepTime = 50
+    val minimalStepTime = 3
 
     gameLoop@ while (true) {
-        snake = Snake(field.getRandomFreeCell())
+        val cell = field.getRandomFreeCell().let { BodyItem(it.first, it.second) }
+        snake = Snake(cell)
         var direction: Direction = strategy.getMove(snake, field, food, null)
 
         while (true) {
@@ -35,7 +36,7 @@ fun main(args: Array<String>) {
                 snake.grow()
                 do {
                     food = Food(size, size)
-                } while (snake.body.contains(food.x to food.y))
+                } while (snake.body.contains(BodyItem(food.x, food.y)))
             }
 
             val startTime = System.currentTimeMillis()
@@ -56,5 +57,7 @@ fun main(args: Array<String>) {
     }
 }
 
-fun isBeyondCell(cell: Pair<Int, Int>, field: Field) = field.getCells().none { it.second == cell }
-fun isBorderCell(cell: Pair<Int, Int>, field: Field) = field.getCellType(cell.first, cell.second) == ElementType.BORDER
+fun isBeyondCell(cell: BodyItem, field: Field) =
+    field.getCells().none { it.second.let { BodyItem(it.first, it.second) } == cell }
+
+fun isBorderCell(cell: BodyItem, field: Field) = field.getCellType(cell.first, cell.second) == ElementType.BORDER

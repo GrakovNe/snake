@@ -1,5 +1,6 @@
 package org.grakovne.snake.neural
 
+import org.grakovne.snake.BodyItem
 import org.grakovne.snake.ElementType
 import org.grakovne.snake.Field
 import org.grakovne.snake.Snake
@@ -25,7 +26,7 @@ class FastGraph(private val field: Field) {
             val neighbors = getNeighbors(current)
             for (neighbor in neighbors) {
                 val (x, y) = neighbor
-                if (!visited[y][x] && field.getCellType(x, y) != ElementType.BORDER && Pair(x, y) !in snake.body) {
+                if (!visited[y][x] && field.getCellType(x, y) != ElementType.BORDER && BodyItem(x, y) !in snake.body) {
                     visited[y][x] = true
                     queue.add(Pair(neighbor, path + neighbor))
                 }

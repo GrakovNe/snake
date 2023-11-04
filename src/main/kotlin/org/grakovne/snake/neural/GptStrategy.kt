@@ -1,5 +1,6 @@
 package org.grakovne.snake.neural
 
+import org.grakovne.snake.BodyItem
 import org.grakovne.snake.Direction
 import org.grakovne.snake.ElementType
 import org.grakovne.snake.Field
@@ -55,7 +56,7 @@ class GptStrategy {
             val neighborY = head.second + dy
 
             if (field.isInBounds(neighborX, neighborY)) {
-                val neighbor = Pair(neighborX, neighborY)
+                val neighbor = BodyItem(neighborX, neighborY)
                 if (field.isEmpty(neighborX, neighborY) && !simulatedSnake.body.contains(neighbor)) {
                     val area = bfsAccessibleArea(neighborX, neighborY, field, simulatedSnake)
                     if (area.size <= snake.body.size) {
@@ -102,7 +103,7 @@ class GptStrategy {
         Direction.RIGHT -> Pair(0, 1)
     }
 
-    private val safeMoveCache = ConcurrentHashMap<Pair<Int, Int>, Boolean>()
+    private val safeMoveCache = ConcurrentHashMap<BodyItem, Boolean>()
 
     private fun isSafeMove(snake: Snake, field: Field, direction: Direction): Boolean {
         val simulatedSnake = simulateSnakeMove(snake, direction)
@@ -119,15 +120,21 @@ class GptStrategy {
         }
     }
 
-    private fun bfsAccessibleArea(startX: Int, startY: Int, field: Field, snake: Snake): Set<Pair<Int, Int>> {
-        val visited = mutableSetOf<Pair<Int, Int>>()
-        val queue = ArrayDeque<Pair<Int, Int>>()
 
-        queue.add(startX to startY)
-        visited.add(startX to startY)
+
+    private fun bfsAccessibleArea(startX: Int, startY: Int, field: Field, snake: Snake): Set<Pair<Int, Int>> {
+        val visited = HashSet<BodyItem>()
+        val queue = ArrayDeque<BodyItem>()
+
+        val start = BodyItem(startX, startY)
+        queue.add(start)
+        visited.add(start)
 
         while (queue.isNotEmpty()) {
-            val (x, y) = queue.removeFirst()
+            val item = queue.removeFirst()
+
+            val x = item.first
+            val y = item.second
 
             Direction.values().forEach { direction ->
                 val (newX, newY) = when (direction) {
@@ -137,20 +144,21 @@ class GptStrategy {
                     Direction.RIGHT -> x to y + 1
                 }
 
+                val new = BodyItem(newX, newY)
                 if (newX in 0 until field.getWidth() &&
                     newY in 0 until field.getHeight() &&
                     field.getCellType(newX, newY) != ElementType.BORDER &&
                     field.getCellType(newX, newY) != ElementType.SNAKE &&
-                    Pair(newX, newY) !in snake.body &&
-                    Pair(newX, newY) !in visited
+                    field.getCellType(newX, newY) != ElementType.SNAKE_HEAD &&
+                    new !in visited
                 ) {
-                    queue.add(newX to newY)
-                    visited.add(newX to newY)
+                    queue.add(new)
+                    visited.add(new)
                 }
             }
         }
 
-        return visited
+        return visited.map { Pair(it.first, it.second) }.toSet()
     }
 
     private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Int {
@@ -159,7 +167,7 @@ class GptStrategy {
 
         val simulatedMove = simulateSnakeMove(snake, direction)
 
-        val safestPath = safeGraph.findSafestPath(head, Pair(food.x, food.y), snake)
+        val safestPath = safeGraph.findSafestPath(head, BodyItem(food.x, food.y), snake)
 
         val compactness = compactnessScore(simulatedMove, field, direction)
         val enclosed = evaluateEnclosingPotential(simulatedMove, field, direction)

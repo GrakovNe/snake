@@ -113,7 +113,7 @@ class Field(private val xSize: Int, private val ySize: Int) {
 
             // Копируем тело змейки
             for (segment in body.drop(1)) {
-                copy.body.add(segment.first to segment.second)
+                copy.body.add(BodyItem(segment.first, segment.second))
             }
 
             // Копируем статус наличия еды
