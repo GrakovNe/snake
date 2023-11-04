@@ -7,9 +7,7 @@ class BodyItem(val first: Int, val second: Int) {
         }
 
         override fun hashCode(): Int {
-            var result = first
-            result = 31 * result + second
-            return result
+            return 31 * first + second
         }
 
     }

@@ -14,7 +14,7 @@ import kotlin.streams.toList
 class GptStrategy {
 
     private val deltaMap = Direction.values().associateWith { it.toDelta() }
-    private val fieldAccessibilityCache = ConcurrentHashMap<Pair<Int, Int>, Set<Pair<Int, Int>>>()
+    private val fieldAccessibilityCache = ConcurrentHashMap<BodyItem, Set<BodyItem>>()
 
     fun getMove(snake: Snake, field: Field, food: Food, previousDirection: Direction?): Direction {
         val availableMoves = Direction
@@ -58,7 +58,7 @@ class GptStrategy {
             if (field.isInBounds(neighborX, neighborY)) {
                 val neighbor = BodyItem(neighborX, neighborY)
                 if (field.isEmpty(neighborX, neighborY) && !simulatedSnake.body.contains(neighbor)) {
-                    val area = bfsAccessibleArea(neighborX, neighborY, field, simulatedSnake)
+                    val area = bfsAccessibleArea(neighborX, neighborY, field)
                     if (area.size <= snake.body.size) {
                         enclosingPotential += area.size
                     }
@@ -89,7 +89,7 @@ class GptStrategy {
     }
 
     private fun getAccessibleAreaCached(startX: Int, startY: Int, field: Field, snake: Snake) =
-        fieldAccessibilityCache.computeIfAbsent(startX to startY) { bfsAccessibleArea(startX, startY, field, snake) }
+        fieldAccessibilityCache.computeIfAbsent(BodyItem(startX, startY)) { bfsAccessibleArea(startX, startY, field) }
 
 
     private fun Field.isInBounds(x: Int, y: Int) = x in 0 until this.getWidth() && y in 0 until this.getHeight()
@@ -122,44 +122,41 @@ class GptStrategy {
 
 
 
-    private fun bfsAccessibleArea(startX: Int, startY: Int, field: Field, snake: Snake): Set<Pair<Int, Int>> {
-        val visited = HashSet<BodyItem>()
+    private fun bfsAccessibleArea(startX: Int, startY: Int, field: Field): Set<BodyItem> {
+        // Предполагаем, что у нас есть заранее определенные максимальные размеры поля
+        val maxWidth = field.getWidth()
+        val maxHeight = field.getHeight()
+        val visited = Array(maxWidth) { BooleanArray(maxHeight) }
+        val accessibleArea = mutableSetOf<BodyItem>()
         val queue = ArrayDeque<BodyItem>()
 
         val start = BodyItem(startX, startY)
         queue.add(start)
-        visited.add(start)
+        visited[startX][startY] = true
+        accessibleArea.add(start)
+
+        val directions = arrayOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1) // UP, DOWN, LEFT, RIGHT
 
         while (queue.isNotEmpty()) {
             val item = queue.removeFirst()
 
-            val x = item.first
-            val y = item.second
+            for ((dx, dy) in directions) {
+                val newX = item.first + dx
+                val newY = item.second + dy
 
-            Direction.values().forEach { direction ->
-                val (newX, newY) = when (direction) {
-                    Direction.UP -> x - 1 to y
-                    Direction.DOWN -> x + 1 to y
-                    Direction.LEFT -> x to y - 1
-                    Direction.RIGHT -> x to y + 1
-                }
-
-                val new = BodyItem(newX, newY)
-                if (newX in 0 until field.getWidth() &&
-                    newY in 0 until field.getHeight() &&
-                    field.getCellType(newX, newY) != ElementType.BORDER &&
-                    field.getCellType(newX, newY) != ElementType.SNAKE &&
-                    field.getCellType(newX, newY) != ElementType.SNAKE_HEAD &&
-                    new !in visited
-                ) {
-                    queue.add(new)
-                    visited.add(new)
+                if (newX in 0 until maxWidth && newY in 0 until maxHeight && field.getCellType(newX, newY) == ElementType.EMPTY && !visited[newX][newY]) {
+                    val newItem = BodyItem(newX, newY)
+                    queue.add(newItem)
+                    visited[newX][newY] = true
+                    accessibleArea.add(newItem)
                 }
             }
         }
 
-        return visited.map { Pair(it.first, it.second) }.toSet()
+        return accessibleArea
     }
+
+
 
     private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Int {
         val head = snake.head()

@@ -28,12 +28,12 @@ class Field(private val xSize: Int, private val ySize: Int) {
     }
 
 
-    fun getCells(): MutableList<Pair<ElementType, Pair<Int, Int>>> {
-        val result = mutableListOf<Pair<ElementType, Pair<Int, Int>>>()
+    fun getCells(): MutableList<Pair<ElementType, BodyItem>> {
+        val result = mutableListOf<Pair<ElementType, BodyItem>>()
 
         for (i in 0 until xSize) {
             for (j in 0 until ySize) {
-                result.add(elements[i][j] to (i to j))
+                result.add(elements[i][j] to BodyItem(i, j))
             }
         }
 
@@ -45,13 +45,13 @@ class Field(private val xSize: Int, private val ySize: Int) {
     fun getWidth() = elements.size
     fun getHeight() = elements[0].size
 
-    fun getRandomFreeCell(): Pair<Int, Int> {
-        val freeCells: MutableList<Pair<Int, Int>> = mutableListOf()
+    fun getRandomFreeCell():BodyItem {
+        val freeCells: MutableList<BodyItem> = mutableListOf()
 
         for (i in 0 until xSize) {
             for (j in 0 until ySize) {
                 if (elements[i][j] == ElementType.EMPTY) {
-                    freeCells.add(i to j)
+                    freeCells.add(BodyItem(i , j))
                 }
             }
         }
