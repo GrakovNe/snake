@@ -13,8 +13,7 @@ import kotlin.streams.toList
 class GptStrategy {
 
     private val deltaMap = Direction.values().associateWith { it.toDelta() }
-
-    val fieldAccessibilityCache = ConcurrentHashMap<Pair<Int, Int>, Set<Pair<Int, Int>>>()
+    private val fieldAccessibilityCache = ConcurrentHashMap<Pair<Int, Int>, Set<Pair<Int, Int>>>()
 
     fun getMove(snake: Snake, field: Field, food: Food, previousDirection: Direction?): Direction {
         val availableMoves = Direction
@@ -39,10 +38,19 @@ class GptStrategy {
                 } ?: Direction.random()
 
             else ->
-                availableMoves.maxByOrNull { direction ->
-                    compactnessScore(simulateSnakeMove(snake, direction), field)
-                } ?: Direction.random()
+                availableMoves
+                    .filterNot { move -> isLastRowMove(snake, field, move) }
+                    .maxByOrNull { direction ->
+                        compactnessScore(simulateSnakeMove(snake, direction), field)
+                    } ?: Direction.random()
         }
+    }
+
+    private fun isLastRowMove(snake: Snake, field: Field, direction: Direction): Boolean {
+        val head = snake.head()
+        val (_, dy) = deltaMap[direction]!!
+        val newY = head.second + dy
+        return newY == 0 || newY == field.getHeight() - 1
     }
 
     private fun evaluateEnclosingPotential(snake: Snake, field: Field, direction: Direction): Int {
