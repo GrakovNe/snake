@@ -154,6 +154,29 @@ class GptStrategy {
         else 0 // Без штрафа, если достаточно места
     }
 
+    private fun evaluateCompactness(snake: Snake): Int {
+        var compactnessScore = 0
+        val body = snake.body.toList()
+
+        // Проходим по всем сегментам тела змейки, кроме головы и хвоста
+        for (i in 1 until body.size - 1) {
+            val prev = body[i - 1]
+            val current = body[i]
+            val next = body[i + 1]
+
+            // Если текущий сегмент создает "изгиб" между предыдущим и следующим, увеличиваем счет
+            if ((prev.first == current.first && current.second == next.second) ||
+                (prev.second == current.second && current.first == next.first)
+            ) {
+                compactnessScore++
+            }
+        }
+
+        // Можно настроить вес этой оценки в зависимости от предпочтений в игре
+        return compactnessScore
+    }
+
+
 
     private fun evaluateMove(snake: Snake, food: Food, field: Field): Int {
         val head = snake.head()
@@ -163,11 +186,12 @@ class GptStrategy {
 
         val enclosed = evaluateEnclosingPotential(snake, field)
         val trapPotential = trapPotentialAfterEating(snake, field)
+        val compactness = evaluateCompactness(snake)
 
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             safestPath.isEmpty() -> Int.MIN_VALUE
-            else -> field.getWidth() * field.getHeight() - (2 * safestPath.size) - enclosed - trapPotential
+            else -> field.getWidth() * field.getHeight() - (2 * safestPath.size) - enclosed - trapPotential + compactness
         }
     }
 }
