@@ -4,12 +4,14 @@ import org.grakovne.snake.neural.GptStrategy
 import java.lang.RuntimeException
 
 fun main(args: Array<String>) {
+    val width = 10
+    val height = 10
     val strategy = GptStrategy()
-    val field = Field(80, 80)
-    val uiKit = UIKit(80, 80)
+    val field = Field(width, height)
+    val uiKit = UIKit(width, height)
 
-    var snake = Snake(40 to 40)
-    var food = Food(80, 80)
+    var snake = Snake(1 to 1)
+    var food = Food(width, height)
 
 
     field.update(snake, food)
@@ -33,7 +35,7 @@ fun main(args: Array<String>) {
             if (food.x == snake.head().first && food.y == snake.head().second) {
                 snake.grow()
                 do {
-                    food = Food(80, 80)
+                    food = Food(width, height)
                 } while (snake.body.contains(food.x to food.y))
             }
 

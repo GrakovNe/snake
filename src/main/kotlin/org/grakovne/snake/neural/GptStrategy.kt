@@ -45,13 +45,6 @@ class GptStrategy {
         }
     }
 
-    private fun isLastRowMove(snake: Snake, field: Field, direction: Direction): Boolean {
-        val head = snake.head()
-        val (_, dy) = deltaMap[direction]!!
-        val newY = head.first + dy
-        return newY == 0 || newY == field.getHeight() - 1
-    }
-
     private fun evaluateEnclosingPotential(snake: Snake, field: Field, direction: Direction): Int {
         val simulatedSnake = simulateSnakeMove(snake, direction)
         val head = simulatedSnake.head()
@@ -91,10 +84,7 @@ class GptStrategy {
             }
         }
 
-        return when (isLastRowMove(snake, field, direction)) {
-            false -> score
-            true -> Int.MIN_VALUE
-        }
+        return score
     }
 
     private fun getAccessibleAreaCached(startX: Int, startY: Int, field: Field, snake: Snake) =

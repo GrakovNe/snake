@@ -12,13 +12,15 @@ class UIKit(xSize: Int, ySize: Int) {
 
     private val squares = Squares()
     private val currentScore = JLabel()
+    private val about = JLabel()
 
     init {
-        val frame = JFrame("org.grakovne.snake.Snake")
+        val frame = JFrame("org.grakovne.Snake")
 
         val panel = frame.contentPane as JPanel
         panel.layout = null
 
+        frame.setBounds(300, 300, 100, 100)
         frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
         frame.preferredSize = Dimension(xSize * 10 + 75 + 230, ySize * 10 + 75)
         frame.pack()
@@ -26,14 +28,22 @@ class UIKit(xSize: Int, ySize: Int) {
 
         squares.setBounds(0, 0, xSize * 10 + 75, ySize * 10 + 75)
 
-        currentScore.setBounds(xSize * 10 + 75, 360, 200, 100)
+        currentScore.setBounds(xSize * 10 + 75, ySize, 200, 50)
         currentScore.isVisible = true
         currentScore.font = currentScore.font.deriveFont(36.0.toFloat())
         currentScore.font = currentScore.font.deriveFont(1)
-        currentScore.horizontalAlignment = SwingConstants.LEFT
+        currentScore.horizontalAlignment = SwingConstants.CENTER
+
+        about.setBounds(xSize * 10 + 75, 10 * ySize - 10, 200, 50)
+        about.isVisible = true
+        about.text = "@grakovne"
+        about.font = about.font.deriveFont(12.0.toFloat())
+        about.font = about.font.deriveFont(0)
+        about.horizontalAlignment = SwingConstants.CENTER
 
         frame.contentPane.add(squares)
         frame.contentPane.add(currentScore)
+        frame.contentPane.add(about)
     }
 
     private fun toColor(xPos: Int, yPos: Int, field: Field): Color {
