@@ -39,9 +39,8 @@ class GptStrategy {
 
             else ->
                 availableMoves
-                    .filterNot { move -> isLastRowMove(snake, field, move) }
                     .maxByOrNull { direction ->
-                        compactnessScore(simulateSnakeMove(snake, direction), field)
+                        compactnessScore(simulateSnakeMove(snake, direction), field, direction)
                     } ?: Direction.random()
         }
     }
@@ -49,7 +48,7 @@ class GptStrategy {
     private fun isLastRowMove(snake: Snake, field: Field, direction: Direction): Boolean {
         val head = snake.head()
         val (_, dy) = deltaMap[direction]!!
-        val newY = head.second + dy
+        val newY = head.first + dy
         return newY == 0 || newY == field.getHeight() - 1
     }
 
@@ -78,7 +77,7 @@ class GptStrategy {
     }
 
 
-    private fun compactnessScore(snake: Snake, field: Field): Int {
+    private fun compactnessScore(snake: Snake, field: Field, direction: Direction): Int {
         var score = 0
 
         snake.body.forEach { segment ->
@@ -92,7 +91,10 @@ class GptStrategy {
             }
         }
 
-        return score
+        return when(isLastRowMove(snake, field, direction)){
+            false -> score
+            true -> (score * 0.5).toInt()
+        }
     }
 
     private fun getAccessibleAreaCached(startX: Int, startY: Int, field: Field, snake: Snake) =
@@ -169,7 +171,7 @@ class GptStrategy {
 
         val safestPath = safeGraph.findSafestPath(head, Pair(food.x, food.y), snake)
 
-        val compactness = compactnessScore(simulatedMove, field)
+        val compactness = compactnessScore(simulatedMove, field, direction)
         val enclosed = evaluateEnclosingPotential(simulatedMove, field, direction)
 
         val bestPath = safestPath
