@@ -6,9 +6,9 @@ import java.util.concurrent.TimeUnit
 
 
 fun main(args: Array<String>) {
-    val size = 60
+    val size = 30
     val strategy = GptStrategy()
-    val totalGames = 5
+    val totalGames = 50
     val results = IntArray(totalGames)
 
     val executorService = Executors.newWorkStealingPool()

@@ -71,7 +71,6 @@ class Field(private val xSize: Int, private val ySize: Int) {
                     elements[it.first][it.second] = ElementType.SNAKE
                 }
         } catch (ex: Exception) {
-            println("Template Message")
         }
 
         elements[snake.body.first().first][snake.body.first().second] = ElementType.SNAKE_HEAD
