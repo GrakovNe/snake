@@ -1,5 +1,6 @@
 package org.grakovne.snake
 
+import org.grakovne.snake.neural.GptStrategy
 import java.lang.RuntimeException
 
 fun main(args: Array<String>) {

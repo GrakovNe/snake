@@ -1,13 +1,15 @@
-package org.grakovne.snake
+package org.grakovne.snake.neural
 
+import org.grakovne.snake.ElementType
+import org.grakovne.snake.Field
+import org.grakovne.snake.Snake
 import java.util.LinkedList
-import java.util.Queue
 
-class Graph(private val field: Field) {
+class FastGraph(private val field: Field) {
     private val width = field.getWidth()
     private val height = field.getHeight()
 
-    fun findShortestPath(start: Pair<Int, Int>, end: Pair<Int, Int>, snake: Snake, field: Field): List<Pair<Int, Int>> {
+    fun findShortestPath(start: Pair<Int, Int>, end: Pair<Int, Int>, snake: Snake): List<Pair<Int, Int>> {
         val visited = Array(height) { BooleanArray(width) }
         val queue = LinkedList<Pair<Pair<Int, Int>, List<Pair<Int, Int>>>>()
 
