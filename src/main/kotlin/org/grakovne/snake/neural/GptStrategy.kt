@@ -52,14 +52,13 @@ class GptStrategy {
             else ->
                 availableMoves
                     .maxByOrNull { direction ->
-                        compactnessScore(simulateSnakeMove(snake, direction), field, direction)
+                        compactnessScore(simulateSnakeMove(snake, direction), field)
                     } ?: Direction.random()
         }
     }
 
-    private fun evaluateEnclosingPotential(snake: Snake, field: Field, direction: Direction): Int {
-        val simulatedSnake = simulateSnakeMove(snake, direction)
-        val head = simulatedSnake.head()
+    private fun evaluateEnclosingPotential(snake: Snake, field: Field): Int {
+        val head = snake.head()
 
         var enclosingPotential = 0
         deltaMap.values.forEach { (dx, dy) ->
@@ -68,7 +67,7 @@ class GptStrategy {
 
             if (field.isInBounds(neighborX, neighborY)) {
                 val neighbor = BodyItem(neighborX, neighborY)
-                if (field.isEmpty(neighborX, neighborY) && !simulatedSnake.body.contains(neighbor)) {
+                if (field.isEmpty(neighborX, neighborY) && !snake.body.contains(neighbor)) {
                     val area = bfsAccessibleArea(neighborX, neighborY, field)
                     if (area.size <= snake.body.size) {
                         enclosingPotential += area.size
@@ -82,7 +81,7 @@ class GptStrategy {
     }
 
 
-    private fun compactnessScore(snake: Snake, field: Field, direction: Direction): Int {
+    private fun compactnessScore(snake: Snake, field: Field): Int {
         var score = 0
 
         snake.body.forEach { segment ->
@@ -170,6 +169,17 @@ class GptStrategy {
         return accessibleArea
     }
 
+    private fun trapPotentialAfterEating(snake: Snake, field: Field): Int {
+        val headAfterEating = snake.head()
+        val accessibleAreaAfterEating =
+            getAccessibleAreaCached(headAfterEating.first, headAfterEating.second, field, snake)
+
+        // Проверяем, останется ли достаточно места для движения
+        val remainingArea = accessibleAreaAfterEating.size - snake.body.size
+        return if (remainingArea < 0) Int.MIN_VALUE / 2 // Назначаем большое штрафное значение, если змейка заперла себя
+        else 0 // Без штрафа, если достаточно места
+    }
+
 
     private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Int {
         val head = snake.head()
@@ -179,13 +189,14 @@ class GptStrategy {
 
         val safestPath = safeGraph.findSafestPath(head, BodyItem(food.x, food.y), snake)
 
-        val compactness = compactnessScore(simulatedMove, field, direction)
-        val enclosed = evaluateEnclosingPotential(simulatedMove, field, direction)
+        val compactness = compactnessScore(simulatedMove, field)
+        val enclosed = evaluateEnclosingPotential(simulatedMove, field)
+        val trapPotential = trapPotentialAfterEating(simulatedMove, field)
 
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             safestPath.isEmpty() -> Int.MIN_VALUE
-            else -> field.getWidth() * field.getHeight() - safestPath.size + (0.5 * compactness).toInt() + enclosed
+            else -> field.getWidth() * field.getHeight() - (2 * safestPath.size) + (0.5 * compactness).toInt() + enclosed + trapPotential
         }
     }
 }
