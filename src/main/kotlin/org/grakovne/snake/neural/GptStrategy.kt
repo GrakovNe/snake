@@ -1,5 +1,10 @@
 package org.grakovne.snake.neural
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.grakovne.snake.BodyItem
 import org.grakovne.snake.Direction
 import org.grakovne.snake.ElementType
@@ -26,11 +31,17 @@ class GptStrategy {
             return Direction.random()
         }
 
-        val safeMoves = availableMoves.parallelStream()
-            .map { direction -> Pair(direction, isSafeMove(snake, field, direction)) }
-            .filter { it.second }
-            .map { it.first }
-            .toList()
+        val safeMoves = runBlocking {
+            withContext(Dispatchers.Default) {
+                availableMoves.map { direction ->
+                    async {
+                        Pair(direction, isSafeMove(snake, field, direction))
+                    }
+                }.awaitAll()
+                    .filter { it.second }
+                    .map { it.first }
+            }
+        }
 
         return when {
             safeMoves.isNotEmpty() ->
@@ -121,7 +132,6 @@ class GptStrategy {
     }
 
 
-
     private fun bfsAccessibleArea(startX: Int, startY: Int, field: Field): Set<BodyItem> {
         // Предполагаем, что у нас есть заранее определенные максимальные размеры поля
         val maxWidth = field.getWidth()
@@ -144,7 +154,11 @@ class GptStrategy {
                 val newX = item.first + dx
                 val newY = item.second + dy
 
-                if (newX in 0 until maxWidth && newY in 0 until maxHeight && field.getCellType(newX, newY) == ElementType.EMPTY && !visited[newX][newY]) {
+                if (newX in 0 until maxWidth && newY in 0 until maxHeight && field.getCellType(
+                        newX,
+                        newY
+                    ) == ElementType.EMPTY && !visited[newX][newY]
+                ) {
                     val newItem = BodyItem(newX, newY)
                     queue.add(newItem)
                     visited[newX][newY] = true
@@ -155,7 +169,6 @@ class GptStrategy {
 
         return accessibleArea
     }
-
 
 
     private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Int {
@@ -169,12 +182,10 @@ class GptStrategy {
         val compactness = compactnessScore(simulatedMove, field, direction)
         val enclosed = evaluateEnclosingPotential(simulatedMove, field, direction)
 
-        val bestPath = safestPath
-
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
-            bestPath.isEmpty() -> Int.MIN_VALUE
-            else -> field.getWidth() * field.getHeight() - bestPath.size + (0.5 * compactness).toInt() + enclosed
+            safestPath.isEmpty() -> Int.MIN_VALUE
+            else -> field.getWidth() * field.getHeight() - safestPath.size + (0.5 * compactness).toInt() + enclosed
         }
     }
 }
