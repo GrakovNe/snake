@@ -7,14 +7,12 @@ import org.grakovne.snake.Food
 import org.grakovne.snake.Snake
 import org.grakovne.snake.isValidMove
 import org.grakovne.snake.simulateSnakeMove
-import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
+import kotlin.streams.toList
 
 class GptStrategy {
 
     private val deltaMap = Direction.values().associateWith { it.toDelta() }
-    private val executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
 
     val fieldAccessibilityCache = ConcurrentHashMap<Pair<Int, Int>, Set<Pair<Int, Int>>>()
 
@@ -28,16 +26,11 @@ class GptStrategy {
             return Direction.random()
         }
 
-        val moveChecks = availableMoves.map { direction ->
-            Callable { Pair(direction, isSafeMove(snake, field, direction)) }
-        }
-
-        val futures = moveChecks.map { executorService.submit(it) }
-
-        val safeMoves = futures
-            .mapNotNull { future ->
-                future.get()?.takeIf { it.second }?.first
-            }
+        val safeMoves = availableMoves.parallelStream()
+            .map { direction -> Pair(direction, isSafeMove(snake, field, direction)) }
+            .filter { it.second }
+            .map { it.first }
+            .toList()
 
         return when {
             safeMoves.isNotEmpty() ->
@@ -109,17 +102,21 @@ class GptStrategy {
         Direction.RIGHT -> Pair(0, 1)
     }
 
+    private val safeMoveCache = ConcurrentHashMap<Pair<Int, Int>, Boolean>()
+
     private fun isSafeMove(snake: Snake, field: Field, direction: Direction): Boolean {
         val simulatedSnake = simulateSnakeMove(snake, direction)
         val head = simulatedSnake.head()
 
-        val accessibleArea = getAccessibleAreaCached(head.first, head.second, field, simulatedSnake)
+        return safeMoveCache.computeIfAbsent(head) {
+            val accessibleArea = getAccessibleAreaCached(head.first, head.second, field, simulatedSnake)
 
-        val longTermSurvivability = accessibleArea.any { area ->
-            getAccessibleAreaCached(area.first, area.second, field, simulatedSnake).size > snake.body.size
+            val longTermSurvivability = accessibleArea.any { area ->
+                getAccessibleAreaCached(area.first, area.second, field, simulatedSnake).size > snake.body.size
+            }
+
+            accessibleArea.size > snake.body.size && longTermSurvivability
         }
-
-        return accessibleArea.size > snake.body.size && longTermSurvivability
     }
 
     private fun bfsAccessibleArea(startX: Int, startY: Int, field: Field, snake: Snake): Set<Pair<Int, Int>> {
