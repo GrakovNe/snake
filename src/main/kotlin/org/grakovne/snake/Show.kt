@@ -16,7 +16,7 @@ fun main(args: Array<String>) {
     field.update(snake, food)
     uiKit.showField(field)
 
-    val minimalStepTime = 3
+    val minimalStepTime = 5
 
     gameLoop@ while (true) {
         val cell = field.getRandomFreeCell().let { BodyItem(it.first, it.second) }

@@ -46,7 +46,12 @@ class GptStrategy {
         return safeMoves
             .maxByOrNull { direction ->
                 evaluateMove(simulateSnakeMove(snake, direction), food, field)
-            } ?: Direction.random()
+            }
+            ?: availableMoves
+                .maxByOrNull { direction ->
+                    evaluateCompactness(simulateSnakeMove(snake, direction), field)
+                }
+            ?: Direction.random()
     }
 
     private fun evaluateEnclosingPotential(snake: Snake, field: Field): Int {
@@ -241,7 +246,7 @@ class GptStrategy {
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             safestPath.isEmpty() -> Int.MIN_VALUE
-            else -> field.getWidth() * field.getHeight() - (safestPath.size) - enclosed + (compactness) - enclosureRisk - linearity
+            else -> field.getWidth() * field.getHeight() - (safestPath.size) - enclosed + (0.8 * compactness).toInt() - enclosureRisk + linearity
         }
     }
 }
