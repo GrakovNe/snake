@@ -47,7 +47,7 @@ fun main(args: Array<String>) {
             val elapsedTime = System.currentTimeMillis() - startTime
 
             if (elapsedTime < minimalStepTime) {
-                //Thread.sleep(minimalStepTime - elapsedTime)
+                Thread.sleep(minimalStepTime - elapsedTime)
             }
 
             if (isBorderCell(snake.head(), field) || isBeyondCell(snake.head(), field)) {

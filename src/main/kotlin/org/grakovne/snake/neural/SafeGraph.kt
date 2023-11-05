@@ -52,7 +52,6 @@ class SafeGraph(private val field: Field) {
     }
 
     private fun getSafety(point: BodyItem, snake: Snake): Int {
-        // Мера безопасности может быть, например, количеством свободных соседних клеток
         return getNeighbors(point).count { neighbor ->
             field.getCellType(neighbor.first, neighbor.second) != ElementType.BORDER &&
                     field.getCellType(neighbor.first, neighbor.second) != ElementType.SNAKE &&

@@ -227,7 +227,6 @@ class GptStrategy {
     }
 
 
-
     private fun evaluateMove(snake: Snake, food: Food, field: Field): Int {
         val head = snake.head()
         val safeGraph = SafeGraph(field)
@@ -242,7 +241,7 @@ class GptStrategy {
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             safestPath.isEmpty() -> Int.MIN_VALUE
-            else -> field.getWidth() * field.getHeight() - (safestPath.size) - enclosed + (compactness) - enclosureRisk + linearity
+            else -> field.getWidth() * field.getHeight() - (safestPath.size) - enclosed + (compactness) - enclosureRisk - linearity
         }
     }
 }
