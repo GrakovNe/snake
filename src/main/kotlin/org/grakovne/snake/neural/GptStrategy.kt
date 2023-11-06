@@ -45,7 +45,7 @@ class GptStrategy {
 
         return safeMoves
             .maxByOrNull { direction ->
-                evaluateMove(simulateSnakeMove(snake, direction), food, field)
+                evaluateMove(simulateSnakeMove(snake, direction), food, field, direction)
             }
             ?: availableMoves
                 .maxByOrNull { direction ->
@@ -231,8 +231,29 @@ class GptStrategy {
         return -linearityPenalty
     }
 
+    private fun evaluateEdgeRisk(snake: Snake, field: Field, direction: Direction): Int {
+        val head = simulateSnakeMove(snake, direction).head()
+        val center = BodyItem(field.getWidth() / 2, field.getHeight() / 2)
 
-    private fun evaluateMove(snake: Snake, food: Food, field: Field): Int {
+        // Если мы близко к краю поля, запускаем проверку
+        val graph = SafeGraph(field)
+
+        val pathToCenter = graph.findSafestPath(head, center, snake)
+
+        val riskFactor = Int.MAX_VALUE // Например, увеличиваем риск в 1.5 раза, если путь обратно к центру недоступен
+
+        // Если путь обратно к центру заблокирован или его длина больше, чем удвоенная длина змейки,
+        // то считаем это ситуацией высокого риска
+        if (pathToCenter.isEmpty()) {
+            return -riskFactor
+        }
+
+        // Если нет риска, не накладываем штраф
+        return 0
+    }
+
+
+    private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Int {
         val head = snake.head()
         val safeGraph = SafeGraph(field)
 
@@ -242,11 +263,12 @@ class GptStrategy {
         val enclosed = evaluateEnclosingPotential(snake, field)
         val compactness = evaluateCompactness(snake, field)
         val enclosureRisk = evaluateEnclosureRisk(snake, field)
+        val edgeRisk = evaluateEdgeRisk(snake, field, direction)
 
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             safestPath.isEmpty() -> Int.MIN_VALUE
-            else -> field.getWidth() * field.getHeight() - (safestPath.size) - enclosed + (0.8 * compactness).toInt() - enclosureRisk + linearity
+            else -> field.getWidth() * field.getHeight() - (safestPath.size) - enclosed + (0.8 * compactness).toInt() - enclosureRisk + linearity - edgeRisk
         }
     }
 }
