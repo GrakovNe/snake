@@ -4,7 +4,7 @@ import org.grakovne.snake.neural.GptStrategy
 import java.lang.RuntimeException
 
 fun main(args: Array<String>) {
-    val size = 60
+    val size = 20
     val strategy = GptStrategy()
     val field = Field(size, size)
     val uiKit = UIKit(size, size)
@@ -47,7 +47,7 @@ fun main(args: Array<String>) {
             val elapsedTime = System.currentTimeMillis() - startTime
 
             if (elapsedTime < minimalStepTime) {
-                //Thread.sleep(minimalStepTime - elapsedTime)
+                Thread.sleep(minimalStepTime - elapsedTime)
             }
 
             if (isBorderCell(snake.head(), field) || isBeyondCell(snake.head(), field)) {
