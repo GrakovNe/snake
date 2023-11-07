@@ -267,12 +267,17 @@ class GptStrategy {
         return when {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             safestPath.isEmpty() -> Int.MIN_VALUE
-            else -> field.getWidth() * field.getHeight() -
-                    (safestPath.size) - enclosed +
-                    compactness -
-                    enclosureRisk +
-                    linearity -
-                    distanceToCenter
+            else -> {
+                val fieldSize = field.getWidth() * field.getHeight()
+                val pathScore = -(2.0 * safestPath.size).toInt()
+                val enclosedScore = -(0.7 * enclosed).toInt()
+                val compactnessScore = (2.0 * compactness).toInt()
+                val enclosureRiskScore = -(1.5 * enclosureRisk).toInt()
+                val linearityScore = (1.0 * linearity).toInt()
+                val distanceToCenterScore = -(2.0 * distanceToCenter).toInt()
+
+                fieldSize + pathScore + enclosedScore + compactnessScore + enclosureRiskScore + linearityScore + distanceToCenterScore
+            }
         }
     }
 }
