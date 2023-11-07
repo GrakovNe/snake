@@ -14,6 +14,7 @@ import org.grakovne.snake.Snake
 import org.grakovne.snake.isValidMove
 import org.grakovne.snake.simulateSnakeMove
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.math.sqrt
 
 class GptStrategy {
 
@@ -48,10 +49,14 @@ class GptStrategy {
             }
             ?: availableMoves
                 .maxByOrNull { direction ->
-                    evaluateCompactness(simulateSnakeMove(snake, direction), field)
+                    //evaluateCompactness(simulateSnakeMove(snake, direction), field)
+                    evaluateSpaceAvailability(simulateSnakeMove(snake, direction), field)
                 }
             ?: Direction.random()
     }
+
+    private fun evaluateSpaceAvailability(snake: Snake, field: Field) =
+        bfsAccessibleArea(snake.head().first, snake.head().second, field).size
 
     private fun evaluateEnclosingPotential(snake: Snake, field: Field): Int {
         val head = snake.head()
@@ -109,7 +114,7 @@ class GptStrategy {
     }
 
 
-    private fun bfsAccessibleArea(startX: Int, startY: Int, field: Field): Set<BodyItem> {
+    fun bfsAccessibleArea(startX: Int, startY: Int, field: Field): Set<BodyItem> {
         // Предполагаем, что у нас есть заранее определенные максимальные размеры поля
         val maxWidth = field.getWidth()
         val maxHeight = field.getHeight()
@@ -230,6 +235,22 @@ class GptStrategy {
         return -linearityPenalty
     }
 
+    fun evaluateDistanceToCenter(snake: Snake, field: Field): Int {
+        // Расчет центральной точки поля
+        val centerX = field.getWidth() / 2.0
+        val centerY = field.getHeight() / 2.0
+
+        // Получение текущего положения головы змеи
+        val head = snake.head()
+
+        // Вычисление расстояния от головы змеи до центра поля
+        val distanceX = head.first - centerX
+        val distanceY = head.second - centerY
+
+        // Использование Евклидового расстояния для определения близости к центру
+        return sqrt(distanceX * distanceX + distanceY * distanceY).toInt()
+    }
+
     private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Int {
         val head = snake.head()
         val safeGraph = SafeGraph(field)
@@ -240,6 +261,7 @@ class GptStrategy {
         val enclosed = evaluateEnclosingPotential(snake, field)
         val compactness = evaluateCompactness(snake, field)
         val enclosureRisk = evaluateEnclosureRisk(snake, field)
+        val distanceToCenter = evaluateDistanceToCenter(snake, field)
 
 
         return when {
@@ -247,8 +269,10 @@ class GptStrategy {
             safestPath.isEmpty() -> Int.MIN_VALUE
             else -> field.getWidth() * field.getHeight() -
                     (safestPath.size) - enclosed +
-                    (0.8 * compactness).toInt() -
-                    enclosureRisk + linearity
+                    compactness -
+                    enclosureRisk +
+                    linearity -
+                    distanceToCenter
         }
     }
 }
