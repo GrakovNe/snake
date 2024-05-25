@@ -21,14 +21,16 @@ class GptStrategy {
     private var survivabilityWeight: Double = 1.0
     private var wallProximityWeight: Double = 1.0
     private var compactnessWeight: Double = 1.0
+    private var fieldPartitioningRiskWeight: Double = 1.0
 
     fun setWeights(weights: List<Double>) {
-        if (weights.size != 5) throw IllegalArgumentException("Weights list must have exactly 5 elements")
+        if (weights.size != 6) throw IllegalArgumentException("Weights list must have exactly 5 elements")
         freeSpaceWeight = weights[0]
         pathToFoodWeight = weights[1]
         survivabilityWeight = weights[2]
         wallProximityWeight = weights[3]
         compactnessWeight = weights[4]
+        compactnessWeight = weights[5]
     }
 
     fun getMove(snake: Snake, field: Field, food: Food, previousDirection: Direction?): Direction {
@@ -144,7 +146,13 @@ class GptStrategy {
         for ((dx, dy) in directions) {
             val newX = head.first + dx
             val newY = head.second + dy
-            if (field.isInBounds(newX, newY) && field.isEmpty(newX, newY) && !snake.body.contains(BodyItem(newX, newY))) {
+            if (field.isInBounds(newX, newY) && field.isEmpty(newX, newY) && !snake.body.contains(
+                    BodyItem(
+                        newX,
+                        newY
+                    )
+                )
+            ) {
                 freeSpaceCount++
             }
         }
@@ -219,6 +227,21 @@ class GptStrategy {
         return compactnessScore
     }
 
+    private fun evaluateFieldPartitioningRisk(snake: Snake, field: Field, direction: Direction): Int {
+        val head = snake.head()
+        val accessibleAreaBefore = bfsAccessibleArea(head.first, head.second, field)
+
+        val simulatedSnake = simulateSnakeMove(snake, direction)
+
+        val accessibleAreaAfter = bfsAccessibleArea(simulatedSnake.head().first, simulatedSnake.head().second, field)
+
+        return if (accessibleAreaBefore.size > accessibleAreaAfter.size) {
+            accessibleAreaBefore.size - accessibleAreaAfter.size
+        } else {
+            0
+        }
+    }
+
     // Обновление функции оценки движения
     private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Double {
         val simulatedSnake = simulateSnakeMove(snake, direction)
@@ -228,11 +251,13 @@ class GptStrategy {
         val survivability = evaluateSurvivability(simulatedSnake, field)
         val wallProximity = evaluateWallProximity(simulatedSnake, field)
         val compactness = evaluateCompactness(simulatedSnake)
+        val fieldPartitioningRisk = evaluateFieldPartitioningRisk(snake, field, direction)
 
         return freeSpaceWeight * freeSpaceAroundHead +
                 pathToFoodWeight * pathToFood +
                 survivabilityWeight * survivability +
                 wallProximityWeight * wallProximity +
                 compactnessWeight * compactness
+        fieldPartitioningRiskWeight * fieldPartitioningRisk
     }
 }

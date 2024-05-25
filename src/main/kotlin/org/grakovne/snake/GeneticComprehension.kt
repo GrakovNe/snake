@@ -18,9 +18,9 @@ data class Individual(var weights: List<Double>, var fitness: Double = 0.0)
 fun main() {
     val size = 15
     val totalGames = 10
-    val populationSize = 50
-    val generations = 100
-    val mutationRate = 0.5
+    val populationSize = 500
+    val generations = 10000
+    val mutationRate = 0.17
     val elitismCount = 5
 
     val series = XYSeries("Average Length")
@@ -77,7 +77,7 @@ fun main() {
                 val averageLength = newPopulation.map { it.fitness }.average()
                 println("Average length of new generation: $averageLength")
 
-                if (averageLength >= bestAverageLength) {
+                if (averageLength > bestAverageLength) {
                     population = newPopulation
                     bestAverageLength = averageLength
                     bestIndividual = population.first()
@@ -115,7 +115,7 @@ fun createChart(dataset: XYSeriesCollection): JFreeChart {
 fun initializePopulation(populationSize: Int): MutableList<Individual> {
     val population = mutableListOf<Individual>()
     for (i in 0 until populationSize) {
-        val weights = List(5) { Random.nextDouble(0.0, 10.0) }
+        val weights = List(6) { Random.nextDouble(0.0, 10.0) }
         population.add(Individual(weights))
         println("Initialized individual $i with weights $weights")
     }
