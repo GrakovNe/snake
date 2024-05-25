@@ -22,7 +22,7 @@ class GptStrategy {
     private var linearityWeight: Double = 1.0
     private var distanceToCenterWeight: Double = 1.0
     private var spaceAvailabilityWeight: Double = 1.0
-    private var wallProximityWeight: Double = 1.0
+    private var freeAroundSpaceWeight: Double = 1.0
     private var foodDistanceWeight: Double = 1.0
     private var trapRiskWeight: Double = 1.0
 
@@ -34,7 +34,7 @@ class GptStrategy {
         linearityWeight = weights[3]
         distanceToCenterWeight = weights[4]
         spaceAvailabilityWeight = weights[5]
-        wallProximityWeight = weights[6]
+        freeAroundSpaceWeight = weights[6]
         foodDistanceWeight = weights[7]
         trapRiskWeight = weights[8]
     }
@@ -165,9 +165,6 @@ class GptStrategy {
     private fun evaluateCompactness(snake: Snake, field: Field): Int {
         var compactnessScore = 0
         val body = snake.body.toList()
-
-        val edgePenalty = 10
-
         val maxWidth = field.getWidth()
         val maxHeight = field.getHeight()
 
@@ -181,22 +178,14 @@ class GptStrategy {
             )
 
             var localCompactness = 0
-
             for (neighbor in neighbors) {
                 if (neighbor in body) {
                     localCompactness++
                 }
             }
-
-            if (localCompactness > 1) {
-                compactnessScore += localCompactness
-            }
-
-            if (current.first == 0 || current.first == maxWidth - 1 || current.second == 0 || current.second == maxHeight - 1) {
-                compactnessScore -= edgePenalty
-            }
+            compactnessScore += localCompactness
         }
-        return compactnessScore * 2 - body.size
+        return compactnessScore
     }
 
     private fun evaluateEnclosureRisk(snake: Snake, field: Field): Int {
@@ -215,7 +204,6 @@ class GptStrategy {
 
     private fun evaluateLinearity(snake: Snake): Int {
         var linearityPenalty = 0
-
         val body = snake.body.toList()
 
         for (i in 1 until body.size - 1) {
@@ -233,14 +221,12 @@ class GptStrategy {
     private fun evaluateDistanceToCenter(snake: Snake, field: Field): Int {
         val centerX = field.getWidth() / 2.0
         val centerY = field.getHeight() / 2.0
-
         val head = snake.head()
-
         val distanceX = head.first - centerX
         val distanceY = head.second - centerY
-
         return sqrt(distanceX * distanceX + distanceY * distanceY).toInt()
     }
+
 
     private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Int {
         val head = snake.head()
@@ -252,7 +238,7 @@ class GptStrategy {
         val enclosureRisk = evaluateEnclosureRisk(snake, field)
         val distanceToCenter = evaluateDistanceToCenter(snake, field)
         val spaceAvailability = evaluateSpaceAvailability(simulatedSnake, field)
-        val wallProximity = evaluateWallProximity(simulatedSnake, field)
+        val freeAroundSpace = evaluateFreeSpaceAroundHead(simulatedSnake, field)
         val foodDistance = evaluateFoodDistance(simulatedSnake, food)
         val trapRisk = evaluateTrapRisk(snake, field, food)
 
@@ -266,7 +252,7 @@ class GptStrategy {
                 val linearityScore = (linearityWeight * linearity).toInt()
                 val distanceToCenterScore = -(distanceToCenterWeight * distanceToCenter).toInt()
                 val spaceAvailabilityScore = (spaceAvailabilityWeight * spaceAvailability).toInt()
-                val wallProximityScore = -(wallProximityWeight * wallProximity).toInt()
+                val wallProximityScore = -(freeAroundSpaceWeight * freeAroundSpace).toInt()
                 val foodDistanceScore = -(foodDistanceWeight * foodDistance).toInt()
                 val trapRiskScore = -(trapRiskWeight * trapRisk).toInt()
 
@@ -285,19 +271,21 @@ class GptStrategy {
         }
     }
 
-    private fun evaluateWallProximity(snake: Snake, field: Field): Int {
+    // Новая метрика: количество свободных клеток вокруг головы змейки
+    private fun evaluateFreeSpaceAroundHead(snake: Snake, field: Field): Int {
         val head = snake.head()
-        val maxWidth = field.getWidth()
-        val maxHeight = field.getHeight()
-
-        val proximity = listOf(
-            head.first,
-            head.second,
-            maxWidth - head.first,
-            maxHeight - head.second
-        ).minOrNull() ?: 0
-
-        return proximity
+        val directions = listOf(
+            Pair(-1, 0), Pair(1, 0), Pair(0, -1), Pair(0, 1)
+        )
+        var freeSpaceCount = 0
+        for ((dx, dy) in directions) {
+            val newX = head.first + dx
+            val newY = head.second + dy
+            if (field.isInBounds(newX, newY) && field.isEmpty(newX, newY) && !snake.body.contains(BodyItem(newX, newY))) {
+                freeSpaceCount++
+            }
+        }
+        return freeSpaceCount
     }
 
     private fun evaluateFoodDistance(snake: Snake, food: Food): Int {
