@@ -15,6 +15,30 @@ class GptStrategy {
     private val deltaMap = Direction.values().associateWith { it.toDelta() }
     private val fieldAccessibilityCache = ConcurrentHashMap<BodyItem, Set<BodyItem>>()
 
+    // Веса для различных оценочных функций
+    private var enclosedWeight: Double = 1.0
+    private var compactnessWeight: Double = 1.0
+    private var enclosureRiskWeight: Double = 1.0
+    private var linearityWeight: Double = 1.0
+    private var distanceToCenterWeight: Double = 1.0
+    private var spaceAvailabilityWeight: Double = 1.0
+    private var wallProximityWeight: Double = 1.0
+    private var foodDistanceWeight: Double = 1.0
+    private var trapRiskWeight: Double = 1.0
+
+    fun setWeights(weights: List<Double>) {
+        if (weights.size != 9) throw IllegalArgumentException("Weights list must have exactly 9 elements")
+        enclosedWeight = weights[0]
+        compactnessWeight = weights[1]
+        enclosureRiskWeight = weights[2]
+        linearityWeight = weights[3]
+        distanceToCenterWeight = weights[4]
+        spaceAvailabilityWeight = weights[5]
+        wallProximityWeight = weights[6]
+        foodDistanceWeight = weights[7]
+        trapRiskWeight = weights[8]
+    }
+
     fun getMove(snake: Snake, field: Field, food: Food, previousDirection: Direction?): Direction {
         val availableMoves = Direction
             .values()
@@ -232,15 +256,15 @@ class GptStrategy {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             else -> {
                 val fieldSize = field.getWidth() * field.getHeight()
-                val enclosedScore = -(0.7 * enclosed).toInt()
-                val compactnessScore = (3.0 * compactness).toInt() // Increased weight for compactness
-                val enclosureRiskScore = -(1.5 * enclosureRisk).toInt()
-                val linearityScore = (1.0 * linearity).toInt()
-                val distanceToCenterScore = -(2.0 * distanceToCenter).toInt()
-                val spaceAvailabilityScore = (1.5 * spaceAvailability).toInt()
-                val wallProximityScore = -(1.0 * wallProximity).toInt()
-                val foodDistanceScore = -(2.0 * foodDistance).toInt()
-                val trapRiskScore = -(3.0 * trapRisk).toInt() // Increased weight for trap risk
+                val enclosedScore = -(0.7 * enclosedWeight * enclosed).toInt()
+                val compactnessScore = (3.0 * compactnessWeight * compactness).toInt()
+                val enclosureRiskScore = -(1.5 * enclosureRiskWeight * enclosureRisk).toInt()
+                val linearityScore = (1.0 * linearityWeight * linearity).toInt()
+                val distanceToCenterScore = -(2.0 * distanceToCenterWeight * distanceToCenter).toInt()
+                val spaceAvailabilityScore = (1.5 * spaceAvailabilityWeight * spaceAvailability).toInt()
+                val wallProximityScore = -(1.0 * wallProximityWeight * wallProximity).toInt()
+                val foodDistanceScore = -(2.0 * foodDistanceWeight * foodDistance).toInt()
+                val trapRiskScore = -(3.0 * trapRiskWeight * trapRisk).toInt()
 
                 fieldSize + enclosedScore + compactnessScore + enclosureRiskScore + linearityScore + distanceToCenterScore + spaceAvailabilityScore + wallProximityScore + foodDistanceScore + trapRiskScore
             }
