@@ -7,6 +7,8 @@ import org.jfree.chart.JFreeChart
 import org.jfree.chart.plot.PlotOrientation
 import org.jfree.data.xy.XYSeries
 import org.jfree.data.xy.XYSeriesCollection
+import java.io.File
+import java.io.FileWriter
 import javax.swing.JFrame
 import javax.swing.SwingUtilities
 import java.util.concurrent.Executors
@@ -93,6 +95,11 @@ fun main() {
 
             bestIndividual?.let {
                 println("Best individual weights after $generations generations: ${it.weights}")
+
+                val file = File("best_individual_weights.txt")
+                val fileWriter = FileWriter(file, true) // true для добавления в конец файла
+                fileWriter.write("Best individual weights after $generations generations: ${it.weights}")
+                fileWriter.close()
             }
         }
     }
@@ -134,7 +141,7 @@ fun evaluateFitness(weights: List<Double>, size: Int, totalGames: Int): Double {
         executorService.submit {
             val field = Field(size, size)
             val snake = Snake(BodyItem(1, 1))
-            var food = Food(size,size)
+            var food = Food(size, size)
 
             field.update(snake, food)
 
@@ -166,7 +173,7 @@ fun evaluateFitness(weights: List<Double>, size: Int, totalGames: Int): Double {
                 if (food.x == snake.head().first && food.y == snake.head().second) {
                     snake.grow()
                     do {
-                        food = Food(size,size)
+                        food = Food(size, size)
                     } while (snake.body.contains(BodyItem(food.x, food.y)))
                 }
 
@@ -195,7 +202,8 @@ fun selectParent(population: List<Individual>): Individual {
 // Кроссовер двух родителей для создания нового индивидума
 fun crossover(parent1: Individual, parent2: Individual): Individual {
     val crossoverPoint = Random.nextInt(parent1.weights.size)
-    val childWeights = parent1.weights.subList(0, crossoverPoint) + parent2.weights.subList(crossoverPoint, parent2.weights.size)
+    val childWeights =
+        parent1.weights.subList(0, crossoverPoint) + parent2.weights.subList(crossoverPoint, parent2.weights.size)
     println("Crossover point: $crossoverPoint, Parent1: ${parent1.weights}, Parent2: ${parent2.weights}, Child: $childWeights")
     return Individual(childWeights)
 }
