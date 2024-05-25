@@ -10,7 +10,6 @@ class Snake(point: BodyItem) {
         body.add(BodyItem(point.first, point.second))
     }
 
-
     fun willAteSelf(direction: Direction): Boolean {
         val headX = body.first().first
         val headY = body.first().second
@@ -40,15 +39,13 @@ class Snake(point: BodyItem) {
             Direction.RIGHT -> BodyItem(headX, headY + 1)
         }
 
-        body.drop(1)
+        body.add(0, newHead)
 
         if (!hasFood) {
             body.removeAt(body.size - 1)
         } else {
             hasFood = false
         }
-
-        body.add(0, newHead)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -66,6 +63,4 @@ class Snake(point: BodyItem) {
         result = 31 * result + hasFood.hashCode()
         return result
     }
-
-
 }

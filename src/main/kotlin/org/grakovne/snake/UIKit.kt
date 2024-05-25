@@ -7,7 +7,6 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingConstants
 
-
 class UIKit(xSize: Int, ySize: Int) {
 
     private val squares = Squares()
@@ -30,15 +29,15 @@ class UIKit(xSize: Int, ySize: Int) {
 
         currentScore.setBounds(xSize * 10 + 75, ySize, 200, 50)
         currentScore.isVisible = true
-        currentScore.font = currentScore.font.deriveFont(36.0.toFloat())
-        currentScore.font = currentScore.font.deriveFont(1)
+        currentScore.font = currentScore.font.deriveFont(36.0f)
+        currentScore.font = currentScore.font.deriveFont(Font.BOLD)
         currentScore.horizontalAlignment = SwingConstants.CENTER
 
         about.setBounds(xSize * 10 + 75, 10 * ySize - 10, 200, 50)
         about.isVisible = true
         about.text = "https://github.com/GrakovNe/snake"
-        about.font = about.font.deriveFont(11.0.toFloat())
-        about.font = about.font.deriveFont(0)
+        about.font = about.font.deriveFont(11.0f)
+        about.font = about.font.deriveFont(Font.PLAIN)
         about.horizontalAlignment = SwingConstants.CENTER
 
         frame.contentPane.add(squares)
@@ -57,16 +56,16 @@ class UIKit(xSize: Int, ySize: Int) {
     }
 
     fun showField(field: Field) {
-        squares.clear(Color.WHITE)
+        squares.clear()
 
         for (i in 0 until field.getWidth()) {
             for (j in 0 until field.getHeight()) {
-                squares.addSquare(30 + i * 10, 30 + j * 10, 10, 10, toColor(j, i, field))
+                squares.addSquare(30 + i * 10, 30 + j * 10, 10, 10, toColor(i, j, field))
             }
         }
 
         val score = field.getCells().count { it.first == ElementType.SNAKE }
-        currentScore.text = String.format("%0" + (8 - score.toString().length) + "d%s", 0, score.toString())
+        currentScore.text = String.format("%08d", score)
 
         squares.repaint()
     }
@@ -79,20 +78,18 @@ class UIKit(xSize: Int, ySize: Int) {
             squares.add(rect)
         }
 
-        fun clear(color: Color) {
+        fun clear() {
             squares.clear()
         }
-
 
         override fun paintComponent(g: Graphics) {
             super.paintComponent(g)
 
             val g2 = g as Graphics2D
-            Vector(squares)
-                .forEach { rect ->
-                    g2.color = rect.color
-                    g2.fillRect(rect.rectangle.x, rect.rectangle.y, rect.rectangle.width, rect.rectangle.height)
-                }
+            squares.forEach { rect ->
+                g2.color = rect.color
+                g2.fillRect(rect.rectangle.x, rect.rectangle.y, rect.rectangle.width, rect.rectangle.height)
+            }
         }
     }
 
