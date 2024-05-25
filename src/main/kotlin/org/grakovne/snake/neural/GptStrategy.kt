@@ -146,7 +146,11 @@ class GptStrategy {
                 val newX = item.first + dx
                 val newY = item.second + dy
 
-                if (newX in 0 until maxWidth && newY in 0 until maxHeight && field.getCellType(newX, newY) == ElementType.EMPTY && !visited[newX][newY]) {
+                if (newX in 0 until maxWidth && newY in 0 until maxHeight && field.getCellType(
+                        newX,
+                        newY
+                    ) == ElementType.EMPTY && !visited[newX][newY]
+                ) {
                     val newItem = BodyItem(newX, newY)
                     queue.add(newItem)
                     visited[newX][newY] = true
@@ -256,17 +260,27 @@ class GptStrategy {
             food.x == head.first && food.y == head.second -> Int.MAX_VALUE
             else -> {
                 val fieldSize = field.getWidth() * field.getHeight()
-                val enclosedScore = -(0.7 * enclosedWeight * enclosed).toInt()
-                val compactnessScore = (3.0 * compactnessWeight * compactness).toInt()
-                val enclosureRiskScore = -(1.5 * enclosureRiskWeight * enclosureRisk).toInt()
-                val linearityScore = (1.0 * linearityWeight * linearity).toInt()
-                val distanceToCenterScore = -(2.0 * distanceToCenterWeight * distanceToCenter).toInt()
-                val spaceAvailabilityScore = (1.5 * spaceAvailabilityWeight * spaceAvailability).toInt()
-                val wallProximityScore = -(1.0 * wallProximityWeight * wallProximity).toInt()
-                val foodDistanceScore = -(2.0 * foodDistanceWeight * foodDistance).toInt()
-                val trapRiskScore = -(3.0 * trapRiskWeight * trapRisk).toInt()
+                val enclosedScore = -(enclosedWeight * enclosed).toInt()
+                val compactnessScore = (compactnessWeight * compactness).toInt()
+                val enclosureRiskScore = -(enclosureRiskWeight * enclosureRisk).toInt()
+                val linearityScore = (linearityWeight * linearity).toInt()
+                val distanceToCenterScore = -(distanceToCenterWeight * distanceToCenter).toInt()
+                val spaceAvailabilityScore = (spaceAvailabilityWeight * spaceAvailability).toInt()
+                val wallProximityScore = -(wallProximityWeight * wallProximity).toInt()
+                val foodDistanceScore = -(foodDistanceWeight * foodDistance).toInt()
+                val trapRiskScore = -(trapRiskWeight * trapRisk).toInt()
 
-                fieldSize + enclosedScore + compactnessScore + enclosureRiskScore + linearityScore + distanceToCenterScore + spaceAvailabilityScore + wallProximityScore + foodDistanceScore + trapRiskScore
+                fieldSize +
+                        enclosedScore +
+                        compactnessScore +
+                        enclosureRiskScore +
+                        linearityScore +
+                        distanceToCenterScore +
+                        spaceAvailabilityScore +
+                        wallProximityScore +
+                        trapRiskScore +
+                        foodDistanceScore
+
             }
         }
     }

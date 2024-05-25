@@ -1,6 +1,14 @@
 package org.grakovne.snake
 
 import org.grakovne.snake.neural.GptStrategy
+import org.jfree.chart.ChartFactory
+import org.jfree.chart.ChartPanel
+import org.jfree.chart.JFreeChart
+import org.jfree.chart.plot.PlotOrientation
+import org.jfree.data.xy.XYSeries
+import org.jfree.data.xy.XYSeriesCollection
+import javax.swing.JFrame
+import javax.swing.SwingUtilities
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -8,52 +16,99 @@ import kotlin.random.Random
 data class Individual(var weights: List<Double>, var fitness: Double = 0.0)
 
 fun main() {
-    val size = 20
+    val size = 10
     val totalGames = 10
     val populationSize = 50
     val generations = 100
     val mutationRate = 0.1
     val elitismCount = 5
 
-    // Инициализация популяции
-    var population = initializePopulation(populationSize)
+    val series = XYSeries("Average Length")
+    val dataset = XYSeriesCollection(series)
+    val chart = createChart(dataset)
+    val chartPanel = ChartPanel(chart)
 
-    for (generation in 0 until generations) {
-        println("Generation: $generation")
+    SwingUtilities.invokeLater {
+        val frame = JFrame("Snake Evolution Progress")
+        frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+        frame.contentPane.add(chartPanel)
+        frame.pack()
+        frame.isVisible = true
 
-        // Оценка фитнес-функции
-        population.forEachIndexed { index, individual ->
-            individual.fitness = evaluateFitness(individual.weights, size, totalGames)
-            println("Individual $index: Fitness = ${individual.fitness}, Weights = ${individual.weights}")
+        Executors.newSingleThreadExecutor().submit {
+            // Инициализация популяции
+            var population = initializePopulation(populationSize)
+            var bestAverageLength = 0.0
+            var bestIndividual: Individual? = null
+
+            for (generation in 0 until generations) {
+                println("Generation: $generation")
+
+                // Оценка фитнес-функции
+                population.forEachIndexed { index, individual ->
+                    individual.fitness = evaluateFitness(individual.weights, size, totalGames)
+                    println("Individual $index: Fitness = ${individual.fitness}, Weights = ${individual.weights}")
+                }
+
+                // Сортировка по фитнесу
+                population = population.sortedByDescending { it.fitness }.toMutableList()
+
+                // Вывод лучших результатов текущего поколения
+                println("Best fitness: ${population.first().fitness}, Best weights: ${population.first().weights}")
+
+                val newPopulation = mutableListOf<Individual>()
+
+                // Элитизм: сохранение лучших индивидуумов
+                for (i in 0 until elitismCount) {
+                    newPopulation.add(population[i])
+                    println("Elitism: Preserving individual $i with fitness ${population[i].fitness}")
+                }
+
+                // Кроссовер и мутация для создания новых индивидуумов
+                while (newPopulation.size < populationSize) {
+                    val parent1 = selectParent(population)
+                    val parent2 = selectParent(population)
+                    val child = crossover(parent1, parent2)
+                    mutate(child, mutationRate)
+                    newPopulation.add(child)
+                    println("New child created: Weights = ${child.weights}")
+                }
+
+                val averageLength = newPopulation.map { it.fitness }.average()
+                println("Average length of new generation: $averageLength")
+
+                if (averageLength >= bestAverageLength) {
+                    population = newPopulation
+                    bestAverageLength = averageLength
+                    bestIndividual = population.first()
+                    println("New generation is better or equal to the previous one. Accepting new generation.")
+                } else {
+                    println("New generation is worse than the previous one. Retrying with the same generation.")
+                }
+
+                SwingUtilities.invokeLater {
+                    series.add(generation, bestAverageLength)
+                }
+            }
+
+            bestIndividual?.let {
+                println("Best individual weights after $generations generations: ${it.weights}")
+            }
         }
-
-        // Сортировка по фитнесу
-        population = population.sortedByDescending { it.fitness }.toMutableList()
-
-        // Вывод лучших результатов текущего поколения
-        println("Best fitness: ${population.first().fitness}, Best weights: ${population.first().weights}")
-
-        // Селекция и создание нового поколения
-        val newPopulation = mutableListOf<Individual>()
-
-        // Элитизм: сохранение лучших индивидуумов
-        for (i in 0 until elitismCount) {
-            newPopulation.add(population[i])
-            println("Elitism: Preserving individual $i with fitness ${population[i].fitness}")
-        }
-
-        // Кроссовер и мутация для создания новых индивидуумов
-        while (newPopulation.size < populationSize) {
-            val parent1 = selectParent(population)
-            val parent2 = selectParent(population)
-            val child = crossover(parent1, parent2)
-            mutate(child, mutationRate)
-            newPopulation.add(child)
-            println("New child created: Weights = ${child.weights}")
-        }
-
-        population = newPopulation
     }
+}
+
+fun createChart(dataset: XYSeriesCollection): JFreeChart {
+    return ChartFactory.createXYLineChart(
+        "Average Snake Length per Generation",
+        "Generation",
+        "Average Length",
+        dataset,
+        PlotOrientation.VERTICAL,
+        true,
+        true,
+        false
+    )
 }
 
 // Инициализация популяции случайными весами
@@ -79,13 +134,14 @@ fun evaluateFitness(weights: List<Double>, size: Int, totalGames: Int): Double {
         executorService.submit {
             val field = Field(size, size)
             val snake = Snake(BodyItem(1, 1))
-            var food = Food(size, size)
+            var food = Food(size,size)
 
             field.update(snake, food)
 
             var direction: Direction = strategy.getMove(snake, field, food, null)
             val stateHistory = mutableSetOf<List<BodyItem>>()
             var steps = 0
+            val maxSteps = size * size * 2
 
             gameLoop@ while (true) {
                 direction = strategy.getMove(snake, field, food, direction)
@@ -98,9 +154,8 @@ fun evaluateFitness(weights: List<Double>, size: Int, totalGames: Int): Double {
 
                 snake.move(direction)
 
-                // Проверка на зацикливание
                 val currentState = snake.body.toList()
-                if (stateHistory.contains(currentState) || steps > size * size * 2) {
+                if (stateHistory.contains(currentState) || steps > maxSteps) {
                     results[gameIndex] = snake.body.size
                     println("Game $gameIndex: Snake looped or took too long with length ${snake.body.size}")
                     break@gameLoop
@@ -111,7 +166,7 @@ fun evaluateFitness(weights: List<Double>, size: Int, totalGames: Int): Double {
                 if (food.x == snake.head().first && food.y == snake.head().second) {
                     snake.grow()
                     do {
-                        food = Food(size, size)
+                        food = Food(size,size)
                     } while (snake.body.contains(BodyItem(food.x, food.y)))
                 }
 
