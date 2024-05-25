@@ -5,14 +5,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import org.grakovne.snake.BodyItem
-import org.grakovne.snake.Direction
-import org.grakovne.snake.ElementType
-import org.grakovne.snake.Field
-import org.grakovne.snake.Food
-import org.grakovne.snake.Snake
-import org.grakovne.snake.isValidMove
-import org.grakovne.snake.simulateSnakeMove
+import org.grakovne.snake.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 import kotlin.math.sqrt
@@ -175,7 +168,7 @@ class GptStrategy {
                 compactnessScore -= edgePenalty
             }
         }
-        return compactnessScore - body.size
+        return compactnessScore * 2 - body.size
     }
 
     private fun evaluateEnclosureRisk(snake: Snake, field: Field): Int {
@@ -239,7 +232,7 @@ class GptStrategy {
             else -> {
                 val fieldSize = field.getWidth() * field.getHeight()
                 val enclosedScore = -(0.7 * enclosed).toInt()
-                val compactnessScore = (2.0 * compactness).toInt()
+                val compactnessScore = (3.0 * compactness).toInt() // Increased weight for compactness
                 val enclosureRiskScore = -(1.5 * enclosureRisk).toInt()
                 val linearityScore = (1.0 * linearity).toInt()
                 val distanceToCenterScore = -(2.0 * distanceToCenter).toInt()
