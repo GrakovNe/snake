@@ -20,8 +20,8 @@ data class Individual(var weights: List<Double>, var fitness: Double = 0.0)
 fun main() {
     val size = 15
     val totalGames = 10
-    val populationSize = 500
-    val generations = 10000
+    val populationSize = 50
+    val generations = 2
     val mutationRate = 0.17
     val elitismCount = 5
 
@@ -98,7 +98,7 @@ fun main() {
 
                 val file = File("best_individual_weights.txt")
                 val fileWriter = FileWriter(file, true) // true для добавления в конец файла
-                fileWriter.write("Best individual weights after $generations generations: ${it.weights}")
+                fileWriter.write("Best individual weights after $generations generations: ${it.weights}\n")
                 fileWriter.close()
             }
         }
