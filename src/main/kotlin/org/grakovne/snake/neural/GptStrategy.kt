@@ -8,11 +8,9 @@ import kotlinx.coroutines.withContext
 import org.grakovne.snake.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
-import kotlin.math.sqrt
 
 class GptStrategy {
 
-    private val deltaMap = Direction.values().associateWith { it.toDelta() }
     private val fieldAccessibilityCache = ConcurrentHashMap<BodyItem, Set<BodyItem>>()
 
     // Веса для различных оценочных функций
@@ -22,15 +20,17 @@ class GptStrategy {
     private var wallProximityWeight: Double = 1.0
     private var compactnessWeight: Double = 1.0
     private var fieldPartitioningRiskWeight: Double = 1.0
+    private var squarenessWeight: Double = 1.0
 
     fun setWeights(weights: List<Double>) {
-        if (weights.size != 6) throw IllegalArgumentException("Weights list must have exactly 5 elements")
+        if (weights.size != 7) throw IllegalArgumentException("Weights list must have exactly 5 elements")
         freeSpaceWeight = weights[0]
         pathToFoodWeight = weights[1]
         survivabilityWeight = weights[2]
         wallProximityWeight = weights[3]
         compactnessWeight = weights[4]
         compactnessWeight = weights[5]
+        squarenessWeight = weights[6]
     }
 
     fun getMove(snake: Snake, field: Field, food: Food, previousDirection: Direction?): Direction {
@@ -134,6 +134,20 @@ class GptStrategy {
         }
 
         return accessibleArea
+    }
+
+    private fun evaluateSquareness(snake: Snake): Int {
+        val minX = snake.body.minOf { it.first }
+        val maxX = snake.body.maxOf { it.first }
+        val minY = snake.body.minOf { it.second }
+        val maxY = snake.body.maxOf { it.second }
+
+        val width = maxX - minX + 1
+        val height = maxY - minY + 1
+
+        // Оцениваем отклонение от квадрата
+        val squareness = -abs(width - height)
+        return squareness
     }
 
     // Новая метрика: количество свободных клеток вокруг головы змейки
@@ -252,12 +266,14 @@ class GptStrategy {
         val wallProximity = evaluateWallProximity(simulatedSnake, field)
         val compactness = evaluateCompactness(simulatedSnake)
         val fieldPartitioningRisk = evaluateFieldPartitioningRisk(snake, field, direction)
+        val squareness = evaluateSquareness(simulatedSnake)
 
         return freeSpaceWeight * freeSpaceAroundHead +
                 pathToFoodWeight * pathToFood +
                 survivabilityWeight * survivability +
                 wallProximityWeight * wallProximity +
-                compactnessWeight * compactness
-        fieldPartitioningRiskWeight * fieldPartitioningRisk
+                compactnessWeight * compactness +
+                squarenessWeight * squareness +
+                fieldPartitioningRiskWeight * fieldPartitioningRisk
     }
 }

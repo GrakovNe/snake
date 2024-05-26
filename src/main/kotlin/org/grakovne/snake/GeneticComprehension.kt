@@ -18,10 +18,10 @@ import kotlin.random.Random
 data class Individual(var weights: List<Double>, var fitness: Double = 0.0)
 
 fun main() {
-    val size = 15
-    val totalGames = 10
-    val populationSize = 50
-    val generations = 2
+    val size = 20
+    val totalGames = 100
+    val populationSize = 500
+    val generations = 200000
     val mutationRate = 0.17
     val elitismCount = 5
 
@@ -57,6 +57,12 @@ fun main() {
 
                 // Вывод лучших результатов текущего поколения
                 println("Best fitness: ${population.first().fitness}, Best weights: ${population.first().weights}")
+
+                if (population.all { it.fitness == 0.0 }) {
+                    println("All individuals died. Restarting current population.")
+                    population.forEach { it.fitness = 0.0 }
+                    continue
+                }
 
                 val newPopulation = mutableListOf<Individual>()
 
@@ -122,7 +128,7 @@ fun createChart(dataset: XYSeriesCollection): JFreeChart {
 fun initializePopulation(populationSize: Int): MutableList<Individual> {
     val population = mutableListOf<Individual>()
     for (i in 0 until populationSize) {
-        val weights = List(6) { Random.nextDouble(0.0, 10.0) }
+        val weights = List(7) { Random.nextDouble(0.0, 3.0) }
         population.add(Individual(weights))
         println("Initialized individual $i with weights $weights")
     }
