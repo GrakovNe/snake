@@ -18,12 +18,12 @@ import kotlin.random.Random
 data class Individual(var weights: List<Double>, var fitness: Double = 0.0)
 
 fun main() {
-    val size = 20
+    val size = 40
     val totalGames = 100
-    val populationSize = 500
+    val populationSize = 1000
     val generations = 200000
-    val mutationRate = 0.17
-    val elitismCount = 5
+    val mutationRate = 0.2
+    val elitismCount = 3
 
     val series = XYSeries("Average Length")
     val dataset = XYSeriesCollection(series)
