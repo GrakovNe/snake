@@ -230,7 +230,7 @@ class GptStrategy {
 
         return fieldSize +
                 //enclosedScore +
-                //compactnessScore +
+                compactnessScore +
                 //enclosureRiskScore +
                 //linearityScore +
                 distanceToCenterScore +
