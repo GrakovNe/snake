@@ -50,7 +50,7 @@ fun main() {
 
         Executors.newSingleThreadExecutor().submit {
             // Инициализация популяции
-            var population = initializePopulation(populationSize, emptyList())
+            var population = initializePopulation(populationSize, baseWeights)
             var bestAverageLength = 0.0
             var bestIndividual: Individual? = null
 

@@ -233,7 +233,7 @@ class GptStrategy {
                 //compactnessScore +
                 //enclosureRiskScore +
                 //linearityScore +
-                //distanceToCenterScore +
+                distanceToCenterScore +
                 spaceAvailabilityScore +
                 wallProximityScore +
                 foodDistanceScore
