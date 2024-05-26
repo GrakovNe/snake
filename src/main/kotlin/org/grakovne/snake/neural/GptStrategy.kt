@@ -14,7 +14,6 @@ import kotlin.math.sqrt
 class GptStrategy {
 
     // base pretrained weights
-    var enclosedScoreWeight = 0.7
     var compactnessScoreWeight = 3.0
     var enclosureRiskScoreWeight = 1.5
     var linearityScoreWeight = 1.0
@@ -24,15 +23,13 @@ class GptStrategy {
     var foodDistanceScoreWeight = 2.0
 
     fun setWeights(weights: List<Double>) {
-        if (weights.size != 8) throw IllegalArgumentException("Weights list must have exactly 9 elements")
-        enclosedScoreWeight = weights[0]
-        compactnessScoreWeight = weights[1]
-        enclosureRiskScoreWeight = weights[2]
-        linearityScoreWeight = weights[3]
-        distanceToCenterScoreWeight = weights[4]
-        spaceAvailabilityScoreWeight = weights[5]
-        wallProximityScoreWeight = weights[6]
-        foodDistanceScoreWeight = weights[7]
+        compactnessScoreWeight = weights[0]
+        enclosureRiskScoreWeight = weights[1]
+        linearityScoreWeight = weights[2]
+        distanceToCenterScoreWeight = weights[3]
+        spaceAvailabilityScoreWeight = weights[4]
+        wallProximityScoreWeight = weights[5]
+        foodDistanceScoreWeight = weights[6]
     }
 
     fun getMove(snake: Snake, field: Field, food: Food, previousDirection: Direction?): Direction {
