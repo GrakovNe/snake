@@ -8,13 +8,15 @@ fun main(args: Array<String>) {
     val strategy = GptStrategy()
 
     val weights: List<Double> = listOf(
-        2.9015891684873574,
-        8.927161436250731,
-        0.6511750158828601,
-        2.8082290914465693,
-        0.8255056458174659,
-        1.727158915683225,
-        0.03281942295177698
+        0.7,
+        3.0,
+        1.5,
+        1.0,
+        2.0,
+        1.5,
+        1.0,
+        2.0,
+        3.0
     )
     strategy.setWeights(weights)
 

@@ -18,12 +18,24 @@ import kotlin.random.Random
 data class Individual(var weights: List<Double>, var fitness: Double = 0.0)
 
 fun main() {
-    val size = 40
+    val size = 10
     val totalGames = 100
-    val populationSize = 1000
+    val populationSize = 50
     val generations = 200000
     val mutationRate = 0.2
     val elitismCount = 3
+
+    val baseWeights: List<Double> = listOf(
+        0.7,
+        3.0,
+        1.5,
+        1.0,
+        2.0,
+        1.5,
+        1.0,
+        2.0,
+        3.0
+    )
 
     val series = XYSeries("Average Length")
     val dataset = XYSeriesCollection(series)
@@ -39,7 +51,7 @@ fun main() {
 
         Executors.newSingleThreadExecutor().submit {
             // Инициализация популяции
-            var population = initializePopulation(populationSize)
+            var population = initializePopulation(populationSize, baseWeights)
             var bestAverageLength = 0.0
             var bestIndividual: Individual? = null
 
@@ -125,10 +137,10 @@ fun createChart(dataset: XYSeriesCollection): JFreeChart {
 }
 
 // Инициализация популяции случайными весами
-fun initializePopulation(populationSize: Int): MutableList<Individual> {
+fun initializePopulation(populationSize: Int, baseWeights: List<Double>): MutableList<Individual> {
     val population = mutableListOf<Individual>()
     for (i in 0 until populationSize) {
-        val weights = List(7) { Random.nextDouble(0.0, 3.0) }
+        val weights = baseWeights.takeIf { it.isNotEmpty() } ?: List(9) { Random.nextDouble(0.0, 3.0) }
         population.add(Individual(weights))
         println("Initialized individual $i with weights $weights")
     }
@@ -138,7 +150,7 @@ fun initializePopulation(populationSize: Int): MutableList<Individual> {
 // Оценка фитнес-функции
 fun evaluateFitness(weights: List<Double>, size: Int, totalGames: Int): Double {
     val strategy = GptStrategy()
-    strategy.setWeights(weights)
+    //strategy.setWeights(weights)
 
     val results = IntArray(totalGames)
     val executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
