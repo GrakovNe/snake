@@ -57,11 +57,13 @@ class UIKit(xSize: Int, ySize: Int) {
     }
 
     fun showField(field: Field) {
-        squares.clear()
+        synchronized(squares) {
+            squares.clear()
 
-        for (i in 0 until field.getWidth()) {
-            for (j in 0 until field.getHeight()) {
-                squares.addSquare(30 + i * 10, 30 + j * 10, 10, 10, toColor(i, j, field))
+            for (i in 0 until field.getWidth()) {
+                for (j in 0 until field.getHeight()) {
+                    squares.addSquare(30 + i * 10, 30 + j * 10, 10, 10, toColor(i, j, field))
+                }
             }
         }
 
@@ -76,24 +78,31 @@ class UIKit(xSize: Int, ySize: Int) {
 
         init {
             border = BorderFactory.createLineBorder(Color.BLACK)
+            isDoubleBuffered = true  // Enable double buffering explicitly
         }
 
         fun addSquare(x: Int, y: Int, width: Int, height: Int, color: Color) {
             val rect = Cell(Rectangle(x, y, width, height), color)
-            squares.add(rect)
+            synchronized(this) {
+                squares.add(rect)
+            }
         }
 
         fun clear() {
-            squares.clear()
+            synchronized(this) {
+                squares.clear()
+            }
         }
 
         override fun paintComponent(g: Graphics) {
             super.paintComponent(g)
 
             val g2 = g as Graphics2D
-            squares.forEach { rect ->
-                g2.color = rect.color
-                g2.fillRect(rect.rectangle.x, rect.rectangle.y, rect.rectangle.width, rect.rectangle.height)
+            synchronized(this) {
+                squares.forEach { rect ->
+                    g2.color = rect.color
+                    g2.fillRect(rect.rectangle.x, rect.rectangle.y, rect.rectangle.width, rect.rectangle.height)
+                }
             }
         }
     }
