@@ -26,14 +26,14 @@ fun main() {
     val elitismCount = 3
 
     val baseWeights: List<Double> = listOf(
-        0.7,
-        3.0,
-        1.5,
-        1.0,
-        2.0,
-        1.5,
-        1.0,
-        2.0
+        0.27081153488252796,
+        0.243532277814327,
+        2.258871578095859,
+        0.3041054691084144,
+        1.396377081088321,
+        1.8421232025250636,
+        1.3401581518527927,
+        0.9250468744771045
     )
 
     val series = XYSeries("Average Length")
@@ -149,7 +149,7 @@ fun initializePopulation(populationSize: Int, baseWeights: List<Double>): Mutabl
 // Оценка фитнес-функции
 fun evaluateFitness(weights: List<Double>, size: Int, totalGames: Int): Double {
     val strategy = GptStrategy()
-    //strategy.setWeights(weights)
+    strategy.setWeights(weights)
 
     val results = IntArray(totalGames)
     val executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
