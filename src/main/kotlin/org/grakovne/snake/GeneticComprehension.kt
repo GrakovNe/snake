@@ -50,7 +50,7 @@ fun main() {
 
         Executors.newSingleThreadExecutor().submit {
             // Инициализация популяции
-            var population = initializePopulation(populationSize, baseWeights)
+            var population = initializePopulation(populationSize, emptyList())
             var bestAverageLength = 0.0
             var bestIndividual: Individual? = null
 
@@ -96,14 +96,14 @@ fun main() {
                 val averageLength = newPopulation.map { it.fitness }.average()
                 println("Average length of new generation: $averageLength")
 
-                //if (averageLength > bestAverageLength) {
+                if (averageLength > bestAverageLength) {
                     population = newPopulation
                     bestAverageLength = averageLength
                     bestIndividual = population.first()
                     println("New generation is better or equal to the previous one. Accepting new generation.")
-                //} else {
-                  //  println("New generation is worse than the previous one. Retrying with the same generation.")
-               // }
+                } else {
+                    println("New generation is worse than the previous one. Retrying with the same generation.")
+                }
 
                 SwingUtilities.invokeLater {
                     series.add(generation, bestAverageLength)

@@ -47,26 +47,8 @@ class GptStrategy {
             return Direction.random()
         }
 
-        val safeMoves = runBlocking {
-            withContext(Dispatchers.Default) {
-                availableMoves.map { direction ->
-                    async {
-                        Pair(direction, isSafeMove(snake, field, direction))
-                    }
-                }.awaitAll()
-                    .filter { it.second }
-                    .map { it.first }
-            }
-        }
-
-        return safeMoves
-            .maxByOrNull { direction ->
-                evaluateMove(snake, food, field, direction)
-            }
-            ?: availableMoves
-                .maxByOrNull { direction ->
-                    evaluateSpaceAvailability(simulateSnakeMove(snake, direction), field)
-                }
+        return availableMoves
+            .maxByOrNull { direction -> evaluateMove(snake, food, field, direction) }
             ?: Direction.random()
     }
 
@@ -106,22 +88,6 @@ class GptStrategy {
         Direction.RIGHT -> Pair(0, 1)
     }
 
-    private val safeMoveCache = ConcurrentHashMap<BodyItem, Boolean>()
-
-    private fun isSafeMove(snake: Snake, field: Field, direction: Direction): Boolean {
-        val simulatedSnake = simulateSnakeMove(snake, direction)
-        val head = simulatedSnake.head()
-
-        return safeMoveCache.computeIfAbsent(head) {
-            val accessibleArea = getAccessibleAreaCached(head.first, head.second, field, simulatedSnake)
-
-            val longTermSurvivability = accessibleArea.any { area ->
-                getAccessibleAreaCached(area.first, area.second, field, simulatedSnake).size > snake.body.size
-            }
-
-            accessibleArea.size > snake.body.size && longTermSurvivability
-        }
-    }
 
     private fun bfsAccessibleArea(startX: Int, startY: Int, field: Field): Set<BodyItem> {
         val maxWidth = field.getWidth()
@@ -243,26 +209,34 @@ class GptStrategy {
     private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Double {
         val simulatedSnake = simulateSnakeMove(snake, direction)
 
-        val linearity = evaluateLinearity(snake)
-        val enclosed = evaluateEnclosingPotential(snake, field)
-        val compactness = evaluateCompactness(snake, field)
-        val enclosureRisk = evaluateEnclosureRisk(snake, field)
-        val distanceToCenter = evaluateDistanceToCenter(snake, field)
+        val linearity = evaluateLinearity(simulatedSnake)
+        val enclosed = evaluateEnclosingPotential(simulatedSnake, field)
+        val compactness = evaluateCompactness(simulatedSnake, field)
+        val enclosureRisk = evaluateEnclosureRisk(simulatedSnake, field)
+        val distanceToCenter = evaluateDistanceToCenter(simulatedSnake, field)
         val spaceAvailability = evaluateSpaceAvailability(simulatedSnake, field)
         val wallProximity = evaluateWallProximity(simulatedSnake, field)
         val foodDistance = evaluateFoodDistance(simulatedSnake, food)
 
-                val fieldSize = field.getWidth() * field.getHeight()
-                val enclosedScore = -(enclosedScoreWeight * enclosed)
-                val compactnessScore = (compactnessScoreWeight * compactness)
-                val enclosureRiskScore = -(enclosureRiskScoreWeight * enclosureRisk)
-                val linearityScore = (linearityScoreWeight * linearity)
-                val distanceToCenterScore = -(distanceToCenterScoreWeight * distanceToCenter)
-                val spaceAvailabilityScore = (spaceAvailabilityScoreWeight * spaceAvailability)
-                val wallProximityScore = -(wallProximityScoreWeight * wallProximity)
-                val foodDistanceScore = -(foodDistanceScoreWeight * foodDistance)
+        val fieldSize = field.getWidth() * field.getHeight()
+        val enclosedScore = -(enclosedScoreWeight * enclosed)
+        val compactnessScore = (compactnessScoreWeight * compactness)
+        val enclosureRiskScore = -(enclosureRiskScoreWeight * enclosureRisk)
+        val linearityScore = (linearityScoreWeight * linearity)
+        val distanceToCenterScore = -(distanceToCenterScoreWeight * distanceToCenter)
+        val spaceAvailabilityScore = (spaceAvailabilityScoreWeight * spaceAvailability)
+        val wallProximityScore = -(wallProximityScoreWeight * wallProximity)
+        val foodDistanceScore = -(foodDistanceScoreWeight * foodDistance)
 
-                return fieldSize + enclosedScore + compactnessScore + enclosureRiskScore + linearityScore + distanceToCenterScore + spaceAvailabilityScore + wallProximityScore + foodDistanceScore
+        return fieldSize +
+                //enclosedScore +
+                //compactnessScore +
+                //enclosureRiskScore +
+                //linearityScore +
+                //distanceToCenterScore +
+                spaceAvailabilityScore +
+                wallProximityScore +
+                foodDistanceScore
     }
 
     private fun evaluateWallProximity(snake: Snake, field: Field): Int {
