@@ -33,12 +33,14 @@ class SnakeRunner(private val size: Int, private val weights: List<Double>) {
                 } while (snake.body.contains(BodyItem(food.x, food.y)))
             }
 
-            field.update(snake, food)
-            emit(Pair(field, snake))
+
 
             if (isBorderCell(snake.head(), field) || isBeyondCell(snake.head(), field)) {
                 throw RuntimeException("Bot is Dead")
             }
+
+            field.update(snake, food)
+            emit(Pair(field, snake))
         }
     }
 
