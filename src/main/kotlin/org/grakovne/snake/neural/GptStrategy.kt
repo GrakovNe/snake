@@ -219,10 +219,7 @@ class GptStrategy {
         val foodDistance = evaluateFoodDistance(simulatedSnake, food)
 
         val fieldSize = field.getWidth() * field.getHeight()
-        val enclosedScore = -(enclosedScoreWeight * enclosed)
-        val compactnessScore = (compactnessScoreWeight * compactness)
-        val enclosureRiskScore = -(enclosureRiskScoreWeight * enclosureRisk)
-        val linearityScore = (linearityScoreWeight * linearity)
+        //val compactnessScore = (compactnessScoreWeight * compactness)
         val distanceToCenterScore = -(distanceToCenterScoreWeight * distanceToCenter)
         val spaceAvailabilityScore = (spaceAvailabilityScoreWeight * spaceAvailability)
         val wallProximityScore = -(wallProximityScoreWeight * wallProximity)
@@ -230,7 +227,7 @@ class GptStrategy {
 
         return fieldSize +
                 //enclosedScore +
-                compactnessScore +
+                //compactnessScore +
                 //enclosureRiskScore +
                 //linearityScore +
                 distanceToCenterScore +
