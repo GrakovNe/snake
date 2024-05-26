@@ -252,11 +252,7 @@ class GptStrategy {
         val spaceAvailability = evaluateSpaceAvailability(simulatedSnake, field)
         val wallProximity = evaluateWallProximity(simulatedSnake, field)
         val foodDistance = evaluateFoodDistance(simulatedSnake, food)
-        val trapRisk = evaluateTrapRisk(snake, field, food)
 
-        return when {
-            food.x == head.first && food.y == head.second -> Int.MAX_VALUE.toDouble()
-            else -> {
                 val fieldSize = field.getWidth() * field.getHeight()
                 val enclosedScore = -(enclosedScoreWeight * enclosed)
                 val compactnessScore = (compactnessScoreWeight * compactness)
@@ -267,9 +263,7 @@ class GptStrategy {
                 val wallProximityScore = -(wallProximityScoreWeight * wallProximity)
                 val foodDistanceScore = -(foodDistanceScoreWeight * foodDistance)
 
-                fieldSize + enclosedScore + compactnessScore + enclosureRiskScore + linearityScore + distanceToCenterScore + spaceAvailabilityScore + wallProximityScore + foodDistanceScore
-            }
-        }
+                return fieldSize + enclosedScore + compactnessScore + enclosureRiskScore + linearityScore + distanceToCenterScore + spaceAvailabilityScore + wallProximityScore + foodDistanceScore
     }
 
     private fun evaluateWallProximity(snake: Snake, field: Field): Int {
@@ -290,17 +284,5 @@ class GptStrategy {
     private fun evaluateFoodDistance(snake: Snake, food: Food): Int {
         val head = snake.head()
         return abs(head.first - food.x) + abs(head.second - food.y)
-    }
-
-    private fun evaluateTrapRisk(snake: Snake, field: Field, food: Food): Int {
-        val head = snake.head()
-        val foodAccessibleArea = bfsAccessibleArea(food.x, food.y, field)
-        val headAccessibleArea = bfsAccessibleArea(head.first, head.second, field)
-
-        return if (!foodAccessibleArea.containsAll(headAccessibleArea)) {
-            Int.MAX_VALUE
-        } else {
-            0
-        }
     }
 }
