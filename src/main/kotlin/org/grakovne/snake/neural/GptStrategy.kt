@@ -6,26 +6,22 @@ import org.grakovne.snake.ElementType
 import org.grakovne.snake.Field
 import org.grakovne.snake.Food
 import org.grakovne.snake.Snake
-import org.grakovne.snake.isValidMove
-import org.grakovne.snake.simulateSnakeMove
 import kotlin.math.abs
 import kotlin.math.sqrt
 
 class GptStrategy {
 
     // base pretrained weights
-    var linearityScoreWeight = 1.0
     var distanceToCenterScoreWeight = 2.0
     var spaceAvailabilityScoreWeight = 1.5
     var wallProximityScoreWeight = 1.0
     var foodDistanceScoreWeight = 2.0
 
     fun setWeights(weights: List<Double>) {
-        linearityScoreWeight = weights[0]
-        distanceToCenterScoreWeight = weights[1]
-        spaceAvailabilityScoreWeight = weights[2]
-        wallProximityScoreWeight = weights[3]
-        foodDistanceScoreWeight = weights[4]
+        distanceToCenterScoreWeight = weights[0]
+        spaceAvailabilityScoreWeight = weights[1]
+        wallProximityScoreWeight = weights[2]
+        foodDistanceScoreWeight = weights[3]
     }
 
     fun getMove(snake: Snake, field: Field, food: Food, previousDirection: Direction?): Direction {
@@ -147,4 +143,26 @@ class GptStrategy {
         val head = snake.head()
         return abs(head.first - food.x) + abs(head.second - food.y)
     }
+}
+
+fun isValidMove(snake: Snake, field: Field, direction: Direction): Boolean {
+    val head = snake.head()
+    val (x, y) = when (direction) {
+        Direction.UP -> head.first - 1 to head.second
+        Direction.DOWN -> head.first + 1 to head.second
+        Direction.LEFT -> head.first to head.second - 1
+        Direction.RIGHT -> head.first to head.second + 1
+    }
+
+    return (x in 0 until field.getWidth() && y in 0 until field.getHeight() &&
+            field.getCellType(x, y) != ElementType.BORDER &&
+            field.getCellType(x, y) != ElementType.SNAKE &&
+            BodyItem(x, y) !in snake.body)
+}
+
+fun simulateSnakeMove(snake: Snake, direction: Direction): Snake {
+    val newSnake = Snake(snake.head())
+    newSnake.body.addAll(snake.body.drop(1))
+    newSnake.move(direction)
+    return newSnake
 }
