@@ -14,7 +14,6 @@ import kotlin.math.sqrt
 class GptStrategy {
 
     // base pretrained weights
-    var compactnessScoreWeight = 3.0
     var enclosureRiskScoreWeight = 1.5
     var linearityScoreWeight = 1.0
     var distanceToCenterScoreWeight = 2.0
@@ -23,13 +22,12 @@ class GptStrategy {
     var foodDistanceScoreWeight = 2.0
 
     fun setWeights(weights: List<Double>) {
-        compactnessScoreWeight = weights[0]
-        enclosureRiskScoreWeight = weights[1]
-        linearityScoreWeight = weights[2]
-        distanceToCenterScoreWeight = weights[3]
-        spaceAvailabilityScoreWeight = weights[4]
-        wallProximityScoreWeight = weights[5]
-        foodDistanceScoreWeight = weights[6]
+        enclosureRiskScoreWeight = weights[0]
+        linearityScoreWeight = weights[1]
+        distanceToCenterScoreWeight = weights[2]
+        spaceAvailabilityScoreWeight = weights[3]
+        wallProximityScoreWeight = weights[4]
+        foodDistanceScoreWeight = weights[5]
     }
 
     fun getMove(snake: Snake, field: Field, food: Food, previousDirection: Direction?): Direction {
