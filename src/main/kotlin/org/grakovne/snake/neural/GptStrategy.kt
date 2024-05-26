@@ -241,7 +241,6 @@ class GptStrategy {
     }
 
     private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Double {
-        val head = snake.head()
         val simulatedSnake = simulateSnakeMove(snake, direction)
 
         val linearity = evaluateLinearity(snake)
