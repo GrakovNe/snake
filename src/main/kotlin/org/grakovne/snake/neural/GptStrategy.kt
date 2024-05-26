@@ -24,10 +24,9 @@ class GptStrategy {
     var spaceAvailabilityScoreWeight = 1.5
     var wallProximityScoreWeight = 1.0
     var foodDistanceScoreWeight = 2.0
-    var trapRiskScoreWeight = 3.0
 
     fun setWeights(weights: List<Double>) {
-        if (weights.size != 9) throw IllegalArgumentException("Weights list must have exactly 9 elements")
+        if (weights.size != 8) throw IllegalArgumentException("Weights list must have exactly 9 elements")
         enclosedScoreWeight = weights[0]
         compactnessScoreWeight = weights[1]
         enclosureRiskScoreWeight = weights[2]
@@ -35,8 +34,7 @@ class GptStrategy {
         distanceToCenterScoreWeight = weights[4]
         spaceAvailabilityScoreWeight = weights[5]
         wallProximityScoreWeight = weights[6]
-        foodDistanceScoreWeight = weights[6]
-        trapRiskScoreWeight = weights[6]
+        foodDistanceScoreWeight = weights[7]
     }
 
     fun getMove(snake: Snake, field: Field, food: Food, previousDirection: Direction?): Direction {
@@ -242,7 +240,7 @@ class GptStrategy {
         return sqrt(distanceX * distanceX + distanceY * distanceY).toInt()
     }
 
-    private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Int {
+    private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Double {
         val head = snake.head()
         val simulatedSnake = simulateSnakeMove(snake, direction)
 
@@ -257,21 +255,19 @@ class GptStrategy {
         val trapRisk = evaluateTrapRisk(snake, field, food)
 
         return when {
-            food.x == head.first && food.y == head.second -> Int.MAX_VALUE
+            food.x == head.first && food.y == head.second -> Int.MAX_VALUE.toDouble()
             else -> {
                 val fieldSize = field.getWidth() * field.getHeight()
-                val enclosedScore = -(enclosedScoreWeight * enclosed).toInt()
-                val compactnessScore =
-                    (compactnessScoreWeight * compactness).toInt() // Increased weight for compactness
-                val enclosureRiskScore = -(enclosureRiskScoreWeight * enclosureRisk).toInt()
-                val linearityScore = (linearityScoreWeight * linearity).toInt()
-                val distanceToCenterScore = -(distanceToCenterScoreWeight * distanceToCenter).toInt()
-                val spaceAvailabilityScore = (spaceAvailabilityScoreWeight * spaceAvailability).toInt()
-                val wallProximityScore = -(wallProximityScoreWeight * wallProximity).toInt()
-                val foodDistanceScore = -(foodDistanceScoreWeight * foodDistance).toInt()
-                val trapRiskScore = -(foodDistanceScore * trapRisk).toInt() // Increased weight for trap risk
+                val enclosedScore = -(enclosedScoreWeight * enclosed)
+                val compactnessScore = (compactnessScoreWeight * compactness)
+                val enclosureRiskScore = -(enclosureRiskScoreWeight * enclosureRisk)
+                val linearityScore = (linearityScoreWeight * linearity)
+                val distanceToCenterScore = -(distanceToCenterScoreWeight * distanceToCenter)
+                val spaceAvailabilityScore = (spaceAvailabilityScoreWeight * spaceAvailability)
+                val wallProximityScore = -(wallProximityScoreWeight * wallProximity)
+                val foodDistanceScore = -(foodDistanceScoreWeight * foodDistance)
 
-                fieldSize + enclosedScore + compactnessScore + enclosureRiskScore + linearityScore + distanceToCenterScore + spaceAvailabilityScore + wallProximityScore + foodDistanceScore + trapRiskScore
+                fieldSize + enclosedScore + compactnessScore + enclosureRiskScore + linearityScore + distanceToCenterScore + spaceAvailabilityScore + wallProximityScore + foodDistanceScore
             }
         }
     }

@@ -15,8 +15,7 @@ fun main(args: Array<String>) {
         2.0,
         1.5,
         1.0,
-        2.0,
-        3.0
+        2.0
     )
     strategy.setWeights(weights)
 

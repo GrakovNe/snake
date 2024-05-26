@@ -18,8 +18,8 @@ import kotlin.random.Random
 data class Individual(var weights: List<Double>, var fitness: Double = 0.0)
 
 fun main() {
-    val size = 10
-    val totalGames = 100
+    val size = 20
+    val totalGames = 10
     val populationSize = 50
     val generations = 200000
     val mutationRate = 0.2
@@ -33,8 +33,7 @@ fun main() {
         2.0,
         1.5,
         1.0,
-        2.0,
-        3.0
+        2.0
     )
 
     val series = XYSeries("Average Length")
@@ -97,14 +96,14 @@ fun main() {
                 val averageLength = newPopulation.map { it.fitness }.average()
                 println("Average length of new generation: $averageLength")
 
-                if (averageLength > bestAverageLength) {
+                //if (averageLength > bestAverageLength) {
                     population = newPopulation
                     bestAverageLength = averageLength
                     bestIndividual = population.first()
                     println("New generation is better or equal to the previous one. Accepting new generation.")
-                } else {
-                    println("New generation is worse than the previous one. Retrying with the same generation.")
-                }
+                //} else {
+                  //  println("New generation is worse than the previous one. Retrying with the same generation.")
+               // }
 
                 SwingUtilities.invokeLater {
                     series.add(generation, bestAverageLength)
@@ -140,7 +139,7 @@ fun createChart(dataset: XYSeriesCollection): JFreeChart {
 fun initializePopulation(populationSize: Int, baseWeights: List<Double>): MutableList<Individual> {
     val population = mutableListOf<Individual>()
     for (i in 0 until populationSize) {
-        val weights = baseWeights.takeIf { it.isNotEmpty() } ?: List(9) { Random.nextDouble(0.0, 3.0) }
+        val weights = baseWeights.takeIf { it.isNotEmpty() } ?: List(8) { Random.nextDouble(0.0, 3.0) }
         population.add(Individual(weights))
         println("Initialized individual $i with weights $weights")
     }
