@@ -6,6 +6,7 @@ import javax.swing.JFrame
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingConstants
+import javax.swing.BorderFactory
 
 class UIKit(xSize: Int, ySize: Int) {
 
@@ -15,34 +16,34 @@ class UIKit(xSize: Int, ySize: Int) {
 
     init {
         val frame = JFrame("org.grakovne.Snake")
-
-        val panel = frame.contentPane as JPanel
-        panel.layout = null
-
-        frame.setBounds(300, 300, 100, 100)
         frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+        frame.layout = BorderLayout()
         frame.preferredSize = Dimension(xSize * 10 + 75 + 230, ySize * 10 + 75)
+
+        val mainPanel = JPanel(BorderLayout())
+        val scorePanel = JPanel(BorderLayout())
+        val aboutPanel = JPanel(BorderLayout())
+
+        currentScore.horizontalAlignment = SwingConstants.CENTER
+        currentScore.font = currentScore.font.deriveFont(36.0f).deriveFont(Font.BOLD)
+        scorePanel.add(currentScore, BorderLayout.CENTER)
+
+        about.text = "https://github.com/GrakovNe/snake"
+        about.horizontalAlignment = SwingConstants.CENTER
+        about.font = about.font.deriveFont(11.0f).deriveFont(Font.PLAIN)
+        aboutPanel.add(about, BorderLayout.SOUTH)
+
+        val rightPanel = JPanel(BorderLayout())
+        rightPanel.preferredSize = Dimension(200, ySize * 10 + 75)
+        rightPanel.add(scorePanel, BorderLayout.NORTH)
+        rightPanel.add(aboutPanel, BorderLayout.SOUTH)
+
+        mainPanel.add(squares, BorderLayout.CENTER)
+        mainPanel.add(rightPanel, BorderLayout.EAST)
+
+        frame.add(mainPanel)
         frame.pack()
         frame.isVisible = true
-
-        squares.setBounds(0, 0, xSize * 10 + 75, ySize * 10 + 75)
-
-        currentScore.setBounds(xSize * 10 + 75, ySize, 200, 50)
-        currentScore.isVisible = true
-        currentScore.font = currentScore.font.deriveFont(36.0f)
-        currentScore.font = currentScore.font.deriveFont(Font.BOLD)
-        currentScore.horizontalAlignment = SwingConstants.CENTER
-
-        about.setBounds(xSize * 10 + 75, 10 * ySize - 10, 200, 50)
-        about.isVisible = true
-        about.text = "https://github.com/GrakovNe/snake"
-        about.font = about.font.deriveFont(11.0f)
-        about.font = about.font.deriveFont(Font.PLAIN)
-        about.horizontalAlignment = SwingConstants.CENTER
-
-        frame.contentPane.add(squares)
-        frame.contentPane.add(currentScore)
-        frame.contentPane.add(about)
     }
 
     private fun toColor(xPos: Int, yPos: Int, field: Field): Color {
@@ -72,6 +73,10 @@ class UIKit(xSize: Int, ySize: Int) {
 
     class Squares : JPanel() {
         private val squares: MutableList<Cell> = ArrayList()
+
+        init {
+            border = BorderFactory.createLineBorder(Color.BLACK)
+        }
 
         fun addSquare(x: Int, y: Int, width: Int, height: Int, color: Color) {
             val rect = Cell(Rectangle(x, y, width, height), color)
