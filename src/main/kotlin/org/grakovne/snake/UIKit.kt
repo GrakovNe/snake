@@ -24,7 +24,7 @@ class UIKit(xSize: Int, ySize: Int) {
         val panel = frame.contentPane as JPanel
         panel.layout = null
 
-        frame.setBounds(300, 300, 1000, 100)
+        frame.setBounds(450, 250, 1000, 100)
         frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
         frame.preferredSize = Dimension(xSize * 10 + 75 + 350, ySize * 10 + 75)
         frame.pack()
@@ -51,7 +51,7 @@ class UIKit(xSize: Int, ySize: Int) {
 
         val dataset = XYSeriesCollection(series)
         val chart = ChartFactory.createXYLineChart(
-            "Length Over Steps",
+            "",
             "Steps",
             "Size",
             dataset,
@@ -63,14 +63,13 @@ class UIKit(xSize: Int, ySize: Int) {
 
         val plot = chart.xyPlot
         plot.backgroundAlpha = 0.0f
-        plot.rangeAxis.range = org.jfree.data.Range(0.0, 900.0)
 
         val trans = Color(0xFF, 0xFF, 0xFF, 0)
         chart.backgroundPaint = trans
         plot.backgroundPaint = trans
 
         val chartPanel = ChartPanel(chart)
-        chartPanel.setBounds(xSize * 10 + 35, ySize * 3, 370, 230)
+        chartPanel.setBounds(xSize * 10 + 35, ySize * 3 + 30, 370, 230)
         chartPanel.isOpaque = true
 
         frame.contentPane.add(chartPanel)
