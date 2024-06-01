@@ -2,7 +2,6 @@ package org.grakovne.snake
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import org.grakovne.snake.neural.GptStrategy
 
 class SnakeRunner(private val size: Int, private val weights: List<Double>) {
     private val strategy = GptStrategy().apply { setWeights(weights) }

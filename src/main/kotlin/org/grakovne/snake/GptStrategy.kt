@@ -1,11 +1,5 @@
-package org.grakovne.snake.neural
+package org.grakovne.snake
 
-import org.grakovne.snake.BodyItem
-import org.grakovne.snake.Direction
-import org.grakovne.snake.ElementType
-import org.grakovne.snake.Field
-import org.grakovne.snake.Food
-import org.grakovne.snake.Snake
 import kotlin.math.abs
 import kotlin.math.sqrt
 

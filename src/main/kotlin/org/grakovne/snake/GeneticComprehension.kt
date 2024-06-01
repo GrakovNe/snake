@@ -1,6 +1,5 @@
 package org.grakovne.snake
 
-import org.grakovne.snake.neural.GptStrategy
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.ChartPanel
 import org.jfree.chart.JFreeChart
@@ -26,14 +25,10 @@ fun main() {
     val elitismCount = 3
 
     val baseWeights: List<Double> = listOf(
-        0.27081153488252796,
-        0.243532277814327,
-        2.258871578095859,
-        0.3041054691084144,
         1.396377081088321,
         1.8421232025250636,
         1.3401581518527927,
-        0.9250468744771045
+        2.9250468744771045
     )
 
     val series = XYSeries("Average Length")
@@ -139,7 +134,7 @@ fun createChart(dataset: XYSeriesCollection): JFreeChart {
 fun initializePopulation(populationSize: Int, baseWeights: List<Double>): MutableList<Individual> {
     val population = mutableListOf<Individual>()
     for (i in 0 until populationSize) {
-        val weights = baseWeights.takeIf { it.isNotEmpty() } ?: List(8) { Random.nextDouble(0.0, 3.0) }
+        val weights = baseWeights.takeIf { it.isNotEmpty() } ?: List(4) { Random.nextDouble(0.0, 3.0) }
         population.add(Individual(weights))
         println("Initialized individual $i with weights $weights")
     }
