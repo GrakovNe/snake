@@ -36,17 +36,6 @@ class GptStrategy {
     private fun evaluateSpaceAvailability(snake: Snake, field: Field): Int =
         -bfsAccessibleArea(snake.head().first, snake.head().second, field).size
 
-    private fun Field.isInBounds(x: Int, y: Int) = x in 0 until this.getWidth() && y in 0 until this.getHeight()
-    private fun Field.isEmpty(x: Int, y: Int) = this.getCellType(x, y) == ElementType.EMPTY
-
-    private fun Direction.toDelta(): Pair<Int, Int> = when (this) {
-        Direction.UP -> Pair(-1, 0)
-        Direction.DOWN -> Pair(1, 0)
-        Direction.LEFT -> Pair(0, -1)
-        Direction.RIGHT -> Pair(0, 1)
-    }
-
-
     private fun bfsAccessibleArea(startX: Int, startY: Int, field: Field): Set<BodyItem> {
         val maxWidth = field.getWidth()
         val maxHeight = field.getHeight()
@@ -111,7 +100,6 @@ class GptStrategy {
         val foodDistanceScore = -(foodDistanceScoreWeight * foodDistance)
 
         return fieldSize +
-
                 distanceToCenterScore +
                 spaceAvailabilityScore +
                 wallProximityScore +

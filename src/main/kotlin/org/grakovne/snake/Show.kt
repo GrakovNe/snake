@@ -6,7 +6,7 @@ class Show(size: Int) {
     private val uiKit = UIKit(size, size)
 
     fun display(runner: SnakeRunner) = runBlocking {
-        runner.run().collect { (field, snake) ->
+        runner.run().collect { (field, _) ->
             uiKit.showField(field)
         }
     }
