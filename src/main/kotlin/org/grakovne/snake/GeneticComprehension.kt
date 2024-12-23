@@ -28,7 +28,8 @@ fun main() {
         1.396377081088321,
         1.8421232025250636,
         1.3401581518527927,
-        2.9250468744771045
+        2.9250468744771045,
+        3.0
     )
 
     val series = XYSeries("Average Length")
@@ -44,7 +45,6 @@ fun main() {
         frame.isVisible = true
 
         Executors.newSingleThreadExecutor().submit {
-            // Инициализация популяции
             var population = initializePopulation(populationSize, baseWeights)
             var bestAverageLength = 0.0
             var bestIndividual: Individual? = null
@@ -52,16 +52,13 @@ fun main() {
             for (generation in 0 until generations) {
                 println("Generation: $generation")
 
-                // Оценка фитнес-функции
                 population.forEachIndexed { index, individual ->
                     individual.fitness = evaluateFitness(individual.weights, size, totalGames)
                     println("Individual $index: Fitness = ${individual.fitness}, Weights = ${individual.weights}")
                 }
 
-                // Сортировка по фитнесу
                 population = population.sortedByDescending { it.fitness }.toMutableList()
 
-                // Вывод лучших результатов текущего поколения
                 println("Best fitness: ${population.first().fitness}, Best weights: ${population.first().weights}")
 
                 if (population.all { it.fitness == 0.0 }) {
@@ -72,13 +69,11 @@ fun main() {
 
                 val newPopulation = mutableListOf<Individual>()
 
-                // Элитизм: сохранение лучших индивидуумов
                 for (i in 0 until elitismCount) {
                     newPopulation.add(population[i])
                     println("Elitism: Preserving individual $i with fitness ${population[i].fitness}")
                 }
 
-                // Кроссовер и мутация для создания новых индивидуумов
                 while (newPopulation.size < populationSize) {
                     val parent1 = selectParent(population)
                     val parent2 = selectParent(population)
@@ -109,7 +104,7 @@ fun main() {
                 println("Best individual weights after $generations generations: ${it.weights}")
 
                 val file = File("best_individual_weights.txt")
-                val fileWriter = FileWriter(file, true) // true для добавления в конец файла
+                val fileWriter = FileWriter(file, true)
                 fileWriter.write("Best individual weights after $generations generations: ${it.weights}\n")
                 fileWriter.close()
             }
@@ -134,14 +129,13 @@ fun createChart(dataset: XYSeriesCollection): JFreeChart {
 fun initializePopulation(populationSize: Int, baseWeights: List<Double>): MutableList<Individual> {
     val population = mutableListOf<Individual>()
     for (i in 0 until populationSize) {
-        val weights = baseWeights.takeIf { it.isNotEmpty() } ?: List(4) { Random.nextDouble(0.0, 3.0) }
+        val weights = baseWeights.takeIf { it.isNotEmpty() } ?: List(5) { Random.nextDouble(0.0, 3.0) }
         population.add(Individual(weights))
         println("Initialized individual $i with weights $weights")
     }
     return population
 }
 
-// Оценка фитнес-функции
 fun evaluateFitness(weights: List<Double>, size: Int, totalGames: Int): Double {
     val strategy = GptStrategy()
     strategy.setWeights(weights)
@@ -202,7 +196,6 @@ fun evaluateFitness(weights: List<Double>, size: Int, totalGames: Int): Double {
     return averageLength
 }
 
-// Селекция родителя для кроссовера
 fun selectParent(population: List<Individual>): Individual {
     val tournamentSize = 5
     val tournament = List(tournamentSize) { population[Random.nextInt(population.size)] }
@@ -211,7 +204,6 @@ fun selectParent(population: List<Individual>): Individual {
     return selectedParent
 }
 
-// Кроссовер двух родителей для создания нового индивидума
 fun crossover(parent1: Individual, parent2: Individual): Individual {
     val crossoverPoint = Random.nextInt(parent1.weights.size)
     val childWeights =
@@ -220,7 +212,6 @@ fun crossover(parent1: Individual, parent2: Individual): Individual {
     return Individual(childWeights)
 }
 
-// Мутация индивидума
 fun mutate(individual: Individual, mutationRate: Double) {
     val newWeights = individual.weights.toMutableList()
     newWeights.indices.forEach { i ->
@@ -232,7 +223,6 @@ fun mutate(individual: Individual, mutationRate: Double) {
     individual.weights = newWeights
 }
 
-// Проверка выхода за пределы поля
 fun isOutOfBounds(head: BodyItem, field: Field): Boolean {
     return head.first !in 0 until field.getWidth() || head.second !in 0 until field.getHeight()
 }

@@ -17,7 +17,7 @@ class GptStrategy {
         spaceAvailabilityScoreWeight = weights[1]
         wallProximityScoreWeight = weights[2]
         foodDistanceScoreWeight = weights[3]
-        pathFindingWeight = weights.getOrElse(4) { 3.0 }
+        pathFindingWeight = weights[4]
     }
 
     fun getMove(snake: Snake, field: Field, food: Food, previousDirection: Direction?): Direction {
