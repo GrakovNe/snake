@@ -5,11 +5,10 @@ import kotlin.math.sqrt
 
 class GptStrategy {
 
-    // base pretrained weights
-    var distanceToCenterScoreWeight = 2.0
-    var spaceAvailabilityScoreWeight = 1.5
-    var wallProximityScoreWeight = 1.0
-    var foodDistanceScoreWeight = 2.0
+    var distanceToCenterScoreWeight = 0.5     // было 2.0
+    var spaceAvailabilityScoreWeight = 5.0    // было 1.5, теперь сильнее приоритет свободного пространства
+    var wallProximityScoreWeight = 3.0        // было 1.0, усиливаем отталкивание от стен
+    var foodDistanceScoreWeight = 1.0         // было 2.0, уменьшаем важность еды
 
     fun setWeights(weights: List<Double>) {
         distanceToCenterScoreWeight = weights[0]
@@ -57,10 +56,10 @@ class GptStrategy {
                 val newX = item.first + dx
                 val newY = item.second + dy
 
-                if (newX in 0 until maxWidth && newY in 0 until maxHeight && field.getCellType(
-                        newX,
-                        newY
-                    ) == ElementType.EMPTY && !visited[newX][newY]
+                if (newX in 0 until maxWidth &&
+                    newY in 0 until maxHeight &&
+                    field.getCellType(newX, newY) == ElementType.EMPTY &&
+                    !visited[newX][newY]
                 ) {
                     val newItem = BodyItem(newX, newY)
                     queue.add(newItem)
@@ -93,7 +92,8 @@ class GptStrategy {
         val wallProximity = evaluateWallProximity(simulatedSnake, field)
         val foodDistance = evaluateFoodDistance(simulatedSnake, food)
 
-        val fieldSize = field.getWidth() * field.getHeight()
+        val fieldSize = (field.getWidth() * field.getHeight()).toDouble()
+
         val distanceToCenterScore = -(distanceToCenterScoreWeight * distanceToCenter)
         val spaceAvailabilityScore = -(spaceAvailabilityScoreWeight * spaceAvailability)
         val wallProximityScore = -(wallProximityScoreWeight * wallProximity)
@@ -136,7 +136,8 @@ fun isValidMove(snake: Snake, field: Field, direction: Direction): Boolean {
         Direction.RIGHT -> head.first to head.second + 1
     }
 
-    return (x in 0 until field.getWidth() && y in 0 until field.getHeight() &&
+    return (x in 0 until field.getWidth() &&
+            y in 0 until field.getHeight() &&
             field.getCellType(x, y) != ElementType.BORDER &&
             field.getCellType(x, y) != ElementType.SNAKE &&
             BodyItem(x, y) !in snake.body)
