@@ -2,6 +2,7 @@ package org.grakovne.snake
 
 import kotlin.math.abs
 import kotlin.math.sqrt
+import java.util.PriorityQueue
 
 class GptStrategy {
 
@@ -9,12 +10,14 @@ class GptStrategy {
     var spaceAvailabilityScoreWeight = 1.5
     var wallProximityScoreWeight = 1.0
     var foodDistanceScoreWeight = 2.0
+    var pathFindingWeight = 3.0
 
     fun setWeights(weights: List<Double>) {
         distanceToCenterScoreWeight = weights[0]
         spaceAvailabilityScoreWeight = weights[1]
         wallProximityScoreWeight = weights[2]
         foodDistanceScoreWeight = weights[3]
+        pathFindingWeight = weights.getOrElse(4) { 3.0 }
     }
 
     fun getMove(snake: Snake, field: Field, food: Food, previousDirection: Direction?): Direction {
@@ -33,9 +36,9 @@ class GptStrategy {
     }
 
     private fun evaluateSpaceAvailability(snake: Snake, field: Field): Int =
-        -bfsAccessibleArea(snake.head().first, snake.head().second, field).size
+        -bfsAccessibleArea(snake.head().first, snake.head().second, field, snake).size
 
-    private fun bfsAccessibleArea(startX: Int, startY: Int, field: Field): Set<BodyItem> {
+    private fun bfsAccessibleArea(startX: Int, startY: Int, field: Field, snake: Snake): Set<BodyItem> {
         val maxWidth = field.getWidth()
         val maxHeight = field.getHeight()
         val visited = Array(maxWidth) { BooleanArray(maxHeight) }
@@ -59,7 +62,8 @@ class GptStrategy {
                 if (newX in 0 until maxWidth &&
                     newY in 0 until maxHeight &&
                     field.getCellType(newX, newY) == ElementType.EMPTY &&
-                    !visited[newX][newY]
+                    !visited[newX][newY] &&
+                    BodyItem(newX, newY) !in snake.body
                 ) {
                     val newItem = BodyItem(newX, newY)
                     queue.add(newItem)
@@ -84,26 +88,76 @@ class GptStrategy {
         return sqrt(distanceX * distanceX + distanceY * distanceY).toInt()
     }
 
-    private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Double {
-        val simulatedSnake = simulateSnakeMove(snake, direction)
+    private fun evaluatePathFinding(snake: Snake, food: Food, field: Field): Double {
+        val path = findPath(snake, food, field)
+        return if (path != null) 1.0 else -1.0
+    }
 
-        val distanceToCenter = evaluateDistanceToCenter(simulatedSnake, field)
-        val spaceAvailability = evaluateSpaceAvailability(simulatedSnake, field)
-        val wallProximity = evaluateWallProximity(simulatedSnake, field)
-        val foodDistance = evaluateFoodDistance(simulatedSnake, food)
+    private fun findPath(snake: Snake, food: Food, field: Field): List<BodyItem>? {
+        val start = snake.head()
+        val goal = BodyItem(food.x, food.y)
+        val maxWidth = field.getWidth()
+        val maxHeight = field.getHeight()
 
-        val fieldSize = (field.getWidth() * field.getHeight()).toDouble()
+        val openSet = PriorityQueue<PathNode>(compareBy { it.f })
+        val cameFrom = mutableMapOf<BodyItem, BodyItem>()
+        val gScore = mutableMapOf<BodyItem, Double>().withDefault { Double.POSITIVE_INFINITY }
+        val fScore = mutableMapOf<BodyItem, Double>().withDefault { Double.POSITIVE_INFINITY }
 
-        val distanceToCenterScore = -(distanceToCenterScoreWeight * distanceToCenter)
-        val spaceAvailabilityScore = -(spaceAvailabilityScoreWeight * spaceAvailability)
-        val wallProximityScore = -(wallProximityScoreWeight * wallProximity)
-        val foodDistanceScore = -(foodDistanceScoreWeight * foodDistance)
+        val startItem = BodyItem(start.first, start.second)
+        gScore[startItem] = 0.0
+        fScore[startItem] = heuristic(startItem, goal)
+        openSet.add(PathNode(startItem, fScore[startItem]!!))
 
-        return fieldSize +
-                distanceToCenterScore +
-                spaceAvailabilityScore +
-                wallProximityScore +
-                foodDistanceScore
+        val directions = arrayOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)
+
+        while (openSet.isNotEmpty()) {
+            val current = openSet.poll().position
+            if (current == goal) {
+                return reconstructPath(cameFrom, current)
+            }
+
+            for ((dx, dy) in directions) {
+                val neighborX = current.first + dx
+                val neighborY = current.second + dy
+                val neighbor = BodyItem(neighborX, neighborY)
+
+                if (neighborX !in 0 until maxWidth ||
+                    neighborY !in 0 until maxHeight ||
+                    field.getCellType(neighborX, neighborY) == ElementType.BORDER ||
+                    field.getCellType(neighborX, neighborY) == ElementType.SNAKE ||
+                    neighbor in snake.body
+                ) {
+                    continue
+                }
+
+                val tentativeGScore = gScore.getValue(current) + 1
+                if (tentativeGScore < gScore.getValue(neighbor)) {
+                    cameFrom[neighbor] = current
+                    gScore[neighbor] = tentativeGScore
+                    fScore[neighbor] = tentativeGScore + heuristic(neighbor, goal)
+                    if (!openSet.any { it.position == neighbor }) {
+                        openSet.add(PathNode(neighbor, fScore.getValue(neighbor)))
+                    }
+                }
+            }
+        }
+
+        return null
+    }
+
+    private fun heuristic(a: BodyItem, b: BodyItem): Double {
+        return (abs(a.first - b.first) + abs(a.second - b.second)).toDouble()
+    }
+
+    private fun reconstructPath(cameFrom: Map<BodyItem, BodyItem>, current: BodyItem): List<BodyItem> {
+        val totalPath = mutableListOf(current)
+        var temp = current
+        while (cameFrom.containsKey(temp)) {
+            temp = cameFrom[temp]!!
+            totalPath.add(temp)
+        }
+        return totalPath.reversed()
     }
 
     private fun evaluateWallProximity(snake: Snake, field: Field): Int {
@@ -125,7 +179,51 @@ class GptStrategy {
         val head = snake.head()
         return abs(head.first - food.x) + abs(head.second - food.y)
     }
+
+    private fun isPathSafeAfterMove(snake: Snake, field: Field, direction: Direction): Boolean {
+        val simulatedSnake = simulateSnakeMove(snake, direction)
+        val accessibleSpace = bfsAccessibleArea(simulatedSnake.head().first, simulatedSnake.head().second, field, simulatedSnake)
+        return accessibleSpace.size > (simulatedSnake.body.size + field.getWidth() / 2)
+    }
+
+    private fun evaluateMove(snake: Snake, food: Food, field: Field, direction: Direction): Double {
+        if (!isPathSafeAfterMove(snake, field, direction)) {
+            return Double.NEGATIVE_INFINITY
+        }
+
+        val simulatedSnake = simulateSnakeMove(snake, direction)
+
+        val distanceToCenter = evaluateDistanceToCenter(simulatedSnake, field)
+        val spaceAvailability = evaluateSpaceAvailability(simulatedSnake, field)
+        val wallProximity = evaluateWallProximity(simulatedSnake, field)
+        val foodDistance = evaluateFoodDistance(simulatedSnake, food)
+        val pathFindingScore = evaluatePathFinding(simulatedSnake, food, field)
+
+        val fieldSize = (field.getWidth() * field.getHeight()).toDouble()
+
+        val distanceToCenterScore = -(distanceToCenterScoreWeight * distanceToCenter)
+        val spaceAvailabilityScore = -(spaceAvailabilityScoreWeight * spaceAvailability)
+        val wallProximityScore = -(wallProximityScoreWeight * wallProximity)
+        val foodDistanceScore = -(foodDistanceScoreWeight * foodDistance)
+        val pathFindingScoreWeighted = pathFindingWeight * pathFindingScore
+
+        return fieldSize +
+                distanceToCenterScore +
+                spaceAvailabilityScore +
+                wallProximityScore +
+                foodDistanceScore +
+                pathFindingScoreWeighted
+    }
+
+    private fun simulateSnakeMove(snake: Snake, direction: Direction): Snake {
+        val newSnake = Snake(snake.head())
+        newSnake.body.addAll(snake.body.drop(1))
+        newSnake.move(direction)
+        return newSnake
+    }
 }
+
+data class PathNode(val position: BodyItem, val f: Double)
 
 fun isValidMove(snake: Snake, field: Field, direction: Direction): Boolean {
     val head = snake.head()
@@ -141,11 +239,4 @@ fun isValidMove(snake: Snake, field: Field, direction: Direction): Boolean {
             field.getCellType(x, y) != ElementType.BORDER &&
             field.getCellType(x, y) != ElementType.SNAKE &&
             BodyItem(x, y) !in snake.body)
-}
-
-fun simulateSnakeMove(snake: Snake, direction: Direction): Snake {
-    val newSnake = Snake(snake.head())
-    newSnake.body.addAll(snake.body.drop(1))
-    newSnake.move(direction)
-    return newSnake
 }
