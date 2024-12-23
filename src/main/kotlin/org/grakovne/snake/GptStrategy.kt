@@ -5,10 +5,10 @@ import kotlin.math.sqrt
 
 class GptStrategy {
 
-    var distanceToCenterScoreWeight = 0.5
-    var spaceAvailabilityScoreWeight = 5.0
-    var wallProximityScoreWeight = 3.0
-    var foodDistanceScoreWeight = 1.0
+    var distanceToCenterScoreWeight = 2.0
+    var spaceAvailabilityScoreWeight = 1.5
+    var wallProximityScoreWeight = 1.0
+    var foodDistanceScoreWeight = 2.0
 
     fun setWeights(weights: List<Double>) {
         distanceToCenterScoreWeight = weights[0]
