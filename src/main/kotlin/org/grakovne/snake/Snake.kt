@@ -1,7 +1,7 @@
 package org.grakovne.snake
 
 class Snake(point: BodyItem) {
-    val body: MutableList<BodyItem> = ArrayList()
+    val body: MutableList<BodyItem> = mutableListOf()
     fun head() = body.first()
 
     var hasFood = false
@@ -11,17 +11,13 @@ class Snake(point: BodyItem) {
     }
 
     fun willAteSelf(direction: Direction): Boolean {
-        val headX = body.first().first
-        val headY = body.first().second
-
         val newHead = when (direction) {
-            Direction.UP -> BodyItem(headX - 1, headY)
-            Direction.DOWN -> BodyItem(headX + 1, headY)
-            Direction.LEFT -> BodyItem(headX, headY - 1)
-            Direction.RIGHT -> BodyItem(headX, headY + 1)
+            Direction.UP -> BodyItem(head().first - 1, head().second)
+            Direction.DOWN -> BodyItem(head().first + 1, head().second)
+            Direction.LEFT -> BodyItem(head().first, head().second - 1)
+            Direction.RIGHT -> BodyItem(head().first, head().second + 1)
         }
-
-        return body.any { it == newHead }
+        return body.contains(newHead)
     }
 
     fun grow() {
@@ -29,18 +25,13 @@ class Snake(point: BodyItem) {
     }
 
     fun move(direction: Direction) {
-        val headX = body.first().first
-        val headY = body.first().second
-
         val newHead = when (direction) {
-            Direction.UP -> BodyItem(headX - 1, headY)
-            Direction.DOWN -> BodyItem(headX + 1, headY)
-            Direction.LEFT -> BodyItem(headX, headY - 1)
-            Direction.RIGHT -> BodyItem(headX, headY + 1)
+            Direction.UP -> BodyItem(head().first - 1, head().second)
+            Direction.DOWN -> BodyItem(head().first + 1, head().second)
+            Direction.LEFT -> BodyItem(head().first, head().second - 1)
+            Direction.RIGHT -> BodyItem(head().first, head().second + 1)
         }
-
         body.add(0, newHead)
-
         if (!hasFood) {
             body.removeAt(body.size - 1)
         } else {
@@ -50,12 +41,8 @@ class Snake(point: BodyItem) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Snake
-
-        if (body != other.body) return false
-        return hasFood == other.hasFood
+        if (other !is Snake) return false
+        return body == other.body && hasFood == other.hasFood
     }
 
     override fun hashCode(): Int {

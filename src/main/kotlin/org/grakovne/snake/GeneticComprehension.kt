@@ -17,18 +17,18 @@ import kotlin.random.Random
 data class Individual(var weights: List<Double>, var fitness: Double = 0.0)
 
 fun main() {
-    val size = 20
+    val size = 30
     val totalGames = 10
-    val populationSize = 50
-    val generations = 200000
-    val mutationRate = 0.2
+    val populationSize = 10
+    val generations = 30
+    val mutationRate = 0.05 // Уменьшена вероятность мутации до 5%
     val elitismCount = 3
 
     val baseWeights: List<Double> = listOf(
-        1.396377081088321,
-        1.8421232025250636,
-        1.3401581518527927,
-        2.9250468744771045,
+        2.0,
+        1.5,
+        1.0,
+        2.0,
         3.0
     )
 
@@ -96,7 +96,7 @@ fun main() {
                 }
 
                 SwingUtilities.invokeLater {
-                    series.add(generation, bestAverageLength)
+                    series.add(generation.toDouble(), bestAverageLength)
                 }
             }
 
@@ -104,9 +104,9 @@ fun main() {
                 println("Best individual weights after $generations generations: ${it.weights}")
 
                 val file = File("best_individual_weights.txt")
-                val fileWriter = FileWriter(file, true)
-                fileWriter.write("Best individual weights after $generations generations: ${it.weights}\n")
-                fileWriter.close()
+                FileWriter(file, true).use { writer ->
+                    writer.write("Best individual weights after $generations generations: ${it.weights}\n")
+                }
             }
         }
     }
@@ -125,11 +125,11 @@ fun createChart(dataset: XYSeriesCollection): JFreeChart {
     )
 }
 
-// Инициализация популяции случайными весами
+// Исправленная функция инициализации популяции с полной случайной инициализацией весов
 fun initializePopulation(populationSize: Int, baseWeights: List<Double>): MutableList<Individual> {
     val population = mutableListOf<Individual>()
     for (i in 0 until populationSize) {
-        val weights = baseWeights.takeIf { it.isNotEmpty() } ?: List(5) { Random.nextDouble(0.0, 3.0) }
+        val weights = List(baseWeights.size) { Random.nextDouble(0.0, 3.0) } // Полностью случайные веса
         population.add(Individual(weights))
         println("Initialized individual $i with weights $weights")
     }
@@ -140,7 +140,7 @@ fun evaluateFitness(weights: List<Double>, size: Int, totalGames: Int): Double {
     val strategy = GptStrategy()
     strategy.setWeights(weights)
 
-    val results = IntArray(totalGames)
+    val results = DoubleArray(totalGames)
     val executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
 
     for (gameIndex in 0 until totalGames) {
@@ -160,7 +160,7 @@ fun evaluateFitness(weights: List<Double>, size: Int, totalGames: Int): Double {
                 direction = strategy.getMove(snake, field, food, direction)
 
                 if (snake.willAteSelf(direction) || isOutOfBounds(snake.head(), field)) {
-                    results[gameIndex] = snake.body.size
+                    results[gameIndex] = snake.body.size.toDouble()
                     println("Game $gameIndex: Snake died with length ${snake.body.size}")
                     break@gameLoop
                 }
@@ -169,7 +169,7 @@ fun evaluateFitness(weights: List<Double>, size: Int, totalGames: Int): Double {
 
                 val currentState = snake.body.toList()
                 if (stateHistory.contains(currentState) || steps > maxSteps) {
-                    results[gameIndex] = snake.body.size
+                    results[gameIndex] = snake.body.size.toDouble()
                     println("Game $gameIndex: Snake looped or took too long with length ${snake.body.size}")
                     break@gameLoop
                 }
