@@ -17,12 +17,11 @@ import kotlin.random.Random
 data class Individual(var weights: List<Double>, var fitness: Double = 0.0)
 
 fun main() {
-    val size = 30
-    val totalGames = 10
-    val populationSize = 10
-    val generations = 30
-    val mutationRate = 0.05 // Уменьшена вероятность мутации до 5%
-    val elitismCount = 3
+    val size = 10
+    val totalGames = 15
+    val populationSize = 20
+    val generations = 1000 // Увеличено количество поколений
+    val mutationRate = 0.05
 
     val baseWeights: List<Double> = listOf(
         2.0,
@@ -32,7 +31,7 @@ fun main() {
         3.0
     )
 
-    val series = XYSeries("Average Length")
+    val series = XYSeries("Best Snake Length")
     val dataset = XYSeriesCollection(series)
     val chart = createChart(dataset)
     val chartPanel = ChartPanel(chart)
@@ -46,61 +45,72 @@ fun main() {
 
         Executors.newSingleThreadExecutor().submit {
             var population = initializePopulation(populationSize, baseWeights)
-            var bestAverageLength = 0.0
-            var bestIndividual: Individual? = null
+            var globalBestFitness = 0.0
+            var globalBestIndividual: Individual? = null
+            var adaptiveMutationRate = mutationRate
 
             for (generation in 0 until generations) {
                 println("Generation: $generation")
 
+                // Оценка фитнеса
                 population.forEachIndexed { index, individual ->
                     individual.fitness = evaluateFitness(individual.weights, size, totalGames)
                     println("Individual $index: Fitness = ${individual.fitness}, Weights = ${individual.weights}")
                 }
 
-                population = population.sortedByDescending { it.fitness }.toMutableList()
+                // Диагностика диапазона фитнеса
+                val minFitness = population.minOf { it.fitness }
+                val maxFitness = population.maxOf { it.fitness }
+                val avgFitness = population.map { it.fitness }.average()
+                println("Min Fitness = $minFitness, Max Fitness = $maxFitness, Avg Fitness = $avgFitness")
 
-                println("Best fitness: ${population.first().fitness}, Best weights: ${population.first().weights}")
-
-                if (population.all { it.fitness == 0.0 }) {
-                    println("All individuals died. Restarting current population.")
-                    population.forEach { it.fitness = 0.0 }
-                    continue
+                // Обновление глобального лучшего индивида
+                if (population.first().fitness > globalBestFitness) {
+                    globalBestFitness = population.first().fitness
+                    globalBestIndividual = population.first()
+                    println("New global best fitness: $globalBestFitness")
+                } else {
+                    println("No improvement in this generation. Best fitness remains: $globalBestFitness")
                 }
 
+                // Обновление графика
+                SwingUtilities.invokeLater {
+                    series.add(generation.toDouble(), globalBestFitness)
+                }
+
+                // Адаптивная мутация при замедлении прогресса
+                if (generation > 100 && generation % 50 == 0) {
+                    adaptiveMutationRate = (adaptiveMutationRate + 0.01).coerceAtMost(0.2)
+                    println("Increasing mutation rate to $adaptiveMutationRate")
+                }
+
+                // Создание нового поколения
                 val newPopulation = mutableListOf<Individual>()
 
-                for (i in 0 until elitismCount) {
-                    newPopulation.add(population[i])
-                    println("Elitism: Preserving individual $i with fitness ${population[i].fitness}")
-                }
+                // Элитизм: сохраняем глобально лучшего индивида
+                newPopulation.add(globalBestIndividual ?: population.first())
 
+                // Генерация новых индивидов через кроссовер и мутацию
                 while (newPopulation.size < populationSize) {
                     val parent1 = selectParent(population)
                     val parent2 = selectParent(population)
                     val child = crossover(parent1, parent2)
-                    mutate(child, mutationRate)
+                    mutate(child, adaptiveMutationRate)
                     newPopulation.add(child)
-                    println("New child created: Weights = ${child.weights}")
                 }
 
-                val averageLength = newPopulation.map { it.fitness }.average()
-                println("Average length of new generation: $averageLength")
-
-                if (averageLength > bestAverageLength) {
+                // Замена популяции
+                val newPopulationFitness = newPopulation.map { it.fitness }.average()
+                if (newPopulationFitness >= avgFitness) {
                     population = newPopulation
-                    bestAverageLength = averageLength
-                    bestIndividual = population.first()
-                    println("New generation is better or equal to the previous one. Accepting new generation.")
+                    println("New generation accepted. Average fitness: $newPopulationFitness")
                 } else {
-                    println("New generation is worse than the previous one. Retrying with the same generation.")
-                }
-
-                SwingUtilities.invokeLater {
-                    series.add(generation.toDouble(), bestAverageLength)
+                    println("New generation rejected. Keeping previous generation.")
                 }
             }
 
-            bestIndividual?.let {
+            // Сохранение лучшего индивида
+            globalBestIndividual?.let {
                 println("Best individual weights after $generations generations: ${it.weights}")
 
                 val file = File("best_individual_weights.txt")
@@ -114,9 +124,9 @@ fun main() {
 
 fun createChart(dataset: XYSeriesCollection): JFreeChart {
     return ChartFactory.createXYLineChart(
-        "Average Snake Length per Generation",
+        "Best Snake Length per Generation",
         "Generation",
-        "Average Length",
+        "Best Length",
         dataset,
         PlotOrientation.VERTICAL,
         true,
@@ -125,11 +135,10 @@ fun createChart(dataset: XYSeriesCollection): JFreeChart {
     )
 }
 
-// Исправленная функция инициализации популяции с полной случайной инициализацией весов
 fun initializePopulation(populationSize: Int, baseWeights: List<Double>): MutableList<Individual> {
     val population = mutableListOf<Individual>()
     for (i in 0 until populationSize) {
-        val weights = List(baseWeights.size) { Random.nextDouble(0.0, 3.0) } // Полностью случайные веса
+        val weights = List(baseWeights.size) { Random.nextDouble(0.0, 3.0) }
         population.add(Individual(weights))
         println("Initialized individual $i with weights $weights")
     }
@@ -199,16 +208,12 @@ fun evaluateFitness(weights: List<Double>, size: Int, totalGames: Int): Double {
 fun selectParent(population: List<Individual>): Individual {
     val tournamentSize = 5
     val tournament = List(tournamentSize) { population[Random.nextInt(population.size)] }
-    val selectedParent = tournament.maxByOrNull { it.fitness }!!
-    println("Selected parent with fitness ${selectedParent.fitness} for crossover")
-    return selectedParent
+    return tournament.maxByOrNull { it.fitness }!!
 }
 
 fun crossover(parent1: Individual, parent2: Individual): Individual {
     val crossoverPoint = Random.nextInt(parent1.weights.size)
-    val childWeights =
-        parent1.weights.subList(0, crossoverPoint) + parent2.weights.subList(crossoverPoint, parent2.weights.size)
-    println("Crossover point: $crossoverPoint, Parent1: ${parent1.weights}, Parent2: ${parent2.weights}, Child: $childWeights")
+    val childWeights = parent1.weights.subList(0, crossoverPoint) + parent2.weights.subList(crossoverPoint, parent2.weights.size)
     return Individual(childWeights)
 }
 
@@ -216,8 +221,8 @@ fun mutate(individual: Individual, mutationRate: Double) {
     val newWeights = individual.weights.toMutableList()
     newWeights.indices.forEach { i ->
         if (Random.nextDouble() < mutationRate) {
-            newWeights[i] = Random.nextDouble(0.0, 10.0)
-            println("Mutated gene $i to ${newWeights[i]}")
+            val mutationAmount = Random.nextDouble(-1.0, 1.0)
+            newWeights[i] = (newWeights[i] + mutationAmount).coerceIn(0.0, 10.0)
         }
     }
     individual.weights = newWeights

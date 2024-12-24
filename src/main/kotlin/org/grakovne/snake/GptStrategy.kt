@@ -6,12 +6,20 @@ import java.util.PriorityQueue
 
 class GptStrategy {
 
+    // Initial Weights
     var distanceToCenterScoreWeight = 2.0
     var spaceAvailabilityScoreWeight = 1.5
     var wallProximityScoreWeight = 1.0
     var foodDistanceScoreWeight = 2.0
     var pathFindingWeight = 3.0
 
+    // Learning Rate for weight adjustments
+    private val learningRate = 0.1
+
+    // Store previous move evaluations for learning
+    private var lastMoveEvaluation: MoveEvaluation? = null
+
+    // Function to set initial weights
     fun setWeights(weights: List<Double>) {
         distanceToCenterScoreWeight = weights[0]
         spaceAvailabilityScoreWeight = weights[1]
@@ -20,6 +28,7 @@ class GptStrategy {
         pathFindingWeight = weights[4]
     }
 
+    // Function to get the next move
     fun getMove(snake: Snake, field: Field, food: Food, previousDirection: Direction?): Direction {
         val availableMoves = Direction
             .values()
@@ -30,9 +39,83 @@ class GptStrategy {
             return Direction.random()
         }
 
-        return availableMoves
+        val bestMove = availableMoves
             .maxByOrNull { direction -> evaluateMove(snake, food, field, direction) }
             ?: Direction.random()
+
+        // After selecting the move, store its evaluation for learning
+        lastMoveEvaluation = evaluateMoveDetailed(snake, food, field, bestMove)
+
+        return bestMove
+    }
+
+    // Call this method after each move to adjust weights
+    fun updateWeights() {
+        lastMoveEvaluation?.let { evaluation ->
+            if (evaluation.success) {
+                // Reinforce weights that contributed positively
+                distanceToCenterScoreWeight += learningRate * evaluation.distanceToCenterBenefit
+                spaceAvailabilityScoreWeight += learningRate * evaluation.spaceAvailabilityBenefit
+                wallProximityScoreWeight += learningRate * evaluation.wallProximityBenefit
+                foodDistanceScoreWeight += learningRate * evaluation.foodDistanceBenefit
+                pathFindingWeight += learningRate * evaluation.pathFindingBenefit
+            } else {
+                // Penalize weights that contributed negatively
+                distanceToCenterScoreWeight -= learningRate * evaluation.distanceToCenterPenalty
+                spaceAvailabilityScoreWeight -= learningRate * evaluation.spaceAvailabilityPenalty
+                wallProximityScoreWeight -= learningRate * evaluation.wallProximityPenalty
+                foodDistanceScoreWeight -= learningRate * evaluation.foodDistancePenalty
+                pathFindingWeight -= learningRate * evaluation.pathFindingPenalty
+            }
+
+            // Optionally, normalize weights to prevent them from growing too large or small
+            normalizeWeights()
+        }
+    }
+
+    private fun normalizeWeights() {
+        val total = distanceToCenterScoreWeight + spaceAvailabilityScoreWeight +
+                wallProximityScoreWeight + foodDistanceScoreWeight +
+                pathFindingWeight
+
+        distanceToCenterScoreWeight /= total
+        spaceAvailabilityScoreWeight /= total
+        wallProximityScoreWeight /= total
+        foodDistanceScoreWeight /= total
+        pathFindingWeight /= total
+    }
+
+    // Detailed evaluation of a move for learning purposes
+    private fun evaluateMoveDetailed(snake: Snake, food: Food, field: Field, direction: Direction): MoveEvaluation {
+        val simulatedSnake = simulateSnakeMove(snake, direction)
+        val success = isPathSafeAfterMove(simulatedSnake, field, direction) &&
+                evaluatePathFinding(simulatedSnake, food, field) > 0
+
+        val distanceToCenter = evaluateDistanceToCenter(simulatedSnake, field)
+        val spaceAvailability = evaluateSpaceAvailability(simulatedSnake, field)
+        val wallProximity = evaluateWallProximity(simulatedSnake, field)
+        val foodDistance = evaluateFoodDistance(simulatedSnake, food)
+        val pathFindingScore = evaluatePathFinding(simulatedSnake, food, field)
+
+        return if (success) {
+            MoveEvaluation(
+                success = true,
+                distanceToCenterBenefit = -distanceToCenter,
+                spaceAvailabilityBenefit = -spaceAvailability,
+                wallProximityBenefit = -wallProximity,
+                foodDistanceBenefit = -foodDistance,
+                pathFindingBenefit = pathFindingScore
+            )
+        } else {
+            MoveEvaluation(
+                success = false,
+                distanceToCenterPenalty = distanceToCenter,
+                spaceAvailabilityPenalty = spaceAvailability,
+                wallProximityPenalty = wallProximity,
+                foodDistancePenalty = foodDistance,
+                pathFindingPenalty = -pathFindingScore
+            )
+        }
     }
 
     private fun evaluateSpaceAvailability(snake: Snake, field: Field): Int =
@@ -223,6 +306,21 @@ class GptStrategy {
         return newSnake
     }
 }
+
+// Data class to store move evaluation details
+data class MoveEvaluation(
+    val success: Boolean,
+    val distanceToCenterBenefit: Int = 0,
+    val spaceAvailabilityBenefit: Int = 0,
+    val wallProximityBenefit: Int = 0,
+    val foodDistanceBenefit: Int = 0,
+    val pathFindingBenefit: Double = 0.0,
+    val distanceToCenterPenalty: Int = 0,
+    val spaceAvailabilityPenalty: Int = 0,
+    val wallProximityPenalty: Int = 0,
+    val foodDistancePenalty: Int = 0,
+    val pathFindingPenalty: Double = 0.0
+)
 
 data class PathNode(val position: BodyItem, val f: Double)
 

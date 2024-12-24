@@ -14,6 +14,7 @@ class Show(size: Int) {
 
 fun main(args: Array<String>) {
     val size = 60
+
 //    val weights = listOf(
 //        1.396377081088321,
 //        1.8421232025250636,
@@ -22,7 +23,7 @@ fun main(args: Array<String>) {
 //        3.0
 //    )
     val weights = listOf(
-        1.5375991995990936, 1.3756970286318968, 1.5449809292403884, 1.4912197864049481, 0.4195186675524982
+        1.0424928925042751, 2.365819314793036, 2.2299210773332354, 2.068125380940041, 0.10044140373273092
     )
 
     val runner = SnakeRunner(size, weights)
